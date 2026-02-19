@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://diuxbl2rh2fmo"]
+
+[ext_resource type="Script" uid="uid://6aaqqq0n8e30" path="res://src/View/World/ChunkView.cs" id="1_ve02f"]
+[ext_resource type="TileSet" uid="uid://cktsneo3qith0" path="res://Sprites/tiles/ground_tileset.tres" id="2_ve02f"]
+
+[node name="ChunkView" type="Node2D" unique_id=1600869609 node_paths=PackedStringArray("_groundTiles")]
+y_sort_enabled = true
+script = ExtResource("1_ve02f")
+_groundTiles = NodePath("GroundTiles")
+
+[node name="GroundTiles" type="TileMapLayer" parent="." unique_id=1305885278]
+tile_set = ExtResource("2_ve02f")

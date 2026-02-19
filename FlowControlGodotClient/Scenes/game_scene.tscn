@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://dkxpqglks568r"]
+
+[ext_resource type="Script" uid="uid://c1sixivhf5ikn" path="res://Scripts/GameScene.cs" id="1_6h5vk"]
+[ext_resource type="Texture2D" uid="uid://c5dp13ly6rc7q" path="res://Sprites/MachineSprites/door.png" id="2_fiftr"]
+[ext_resource type="Texture2D" uid="uid://bp0gx6dvsbnpn" path="res://Sprites/Machines/oven.png" id="3_1ixah"]
+[ext_resource type="PackedScene" uid="uid://diuxbl2rh2fmo" path="res://Scenes/chunk_view.tscn" id="3_fiftr"]
+[ext_resource type="Texture2D" uid="uid://37yvpbebfi6v" path="res://Sprites/Entities/cow.png" id="4_rgj8m"]
+[ext_resource type="Script" uid="uid://4g7oljh36q7m" path="res://Scripts/World/ChunkManagerView.cs" id="5_rgj8m"]
+
+[node name="GameScene" type="Node" unique_id=1901527789 node_paths=PackedStringArray("ChunkManagerView", "Camera")]
+script = ExtResource("1_6h5vk")
+MachineSprites = Array[Texture2D]([ExtResource("2_fiftr"), ExtResource("3_1ixah")])
+EntitySprites = Array[Texture2D]([ExtResource("4_rgj8m")])
+ChunkManagerView = NodePath("ChunkManagerView")
+Camera = NodePath("MainCamera")
+
+[node name="ChunkManagerView" type="Node" parent="." unique_id=389811636]
+script = ExtResource("5_rgj8m")
+_chunkScene = ExtResource("3_fiftr")
+
+[node name="MainCamera" type="Camera2D" parent="." unique_id=1680123230]

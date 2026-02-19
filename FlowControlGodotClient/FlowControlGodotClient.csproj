@@ -1,0 +1,19 @@
+﻿<Project Sdk="Godot.NET.Sdk/4.6.0">
+
+  <ItemGroup>
+    <ProjectReference Include="..\FlowControlModel\FlowControlModel.csproj" />
+    <ProjectReference Include="..\FlowControlBusiness\FlowControlBusiness.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SlnFile>../FlowControl.sln</SlnFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Update="Scripts/**/*.cs" />
+  </ItemGroup>
+</Project>

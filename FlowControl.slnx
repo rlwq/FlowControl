@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FlowControlGodotClient/FlowControlGodotClient.csproj" />
+  <Project Path="FlowControlModel/FlowControlModel.csproj" />
+  <Project Path="FlowControlBusiness/FlowControlBusiness.csproj" />
+</Solution>
+
