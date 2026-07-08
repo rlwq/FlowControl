@@ -74,7 +74,7 @@ public partial class Registry
     /// <summary>
     /// Retrieves a <see cref="MachineLogic"/> prototype. It must be copied and not used directly.
     /// </summary>
-    public MachineLogic GetMachineLogic(StringName kind) => _machineLogics[kind];
+    internal MachineLogic GetMachineLogic(StringName kind) => _machineLogics[kind];
     
     /// <summary> <c>True</c> if the machine logic can interact with other machines. </summary>
     public bool IsMachineInteractive(StringName kind) => _machineLogicObserverOffsets.ContainsKey(kind);

@@ -7,7 +7,7 @@ using Godot;
 
 namespace FlowControlModel.Factories;
 
-public class GameObjectFactory(ChunkManager chunkManager)
+internal class GameObjectFactory(ChunkManager chunkManager)
 {
     private uint _availableMachineId = 0;
     private uint _availableEntityId = 0;

@@ -8,7 +8,7 @@ namespace FlowControlModel.Machines;
 public abstract class MachineLogic : IDisposable
 {
     /// <summary> Executes one quant of the logic. </summary>
-    public abstract void Tick(Machine machineInst);
+    public abstract void Tick(IMachine machineInst);
     
     /// <summary>
     /// A copy method used for prototyping. Should copy logic settings.

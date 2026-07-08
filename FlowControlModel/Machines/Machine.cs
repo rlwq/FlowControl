@@ -6,11 +6,21 @@ using FlowControlModel.World;
 
 namespace FlowControlModel.Machines;
 
+public interface IMachine
+{
+    uint Id { get; }
+    MachineLite Lite { get; }
+    Inventory Inventory { get; }
+    Vector2I Coord { get; }
+    Rect2I Rect { get; }
+    Vector2I End { get; }
+}
+
 /// <summary>
 /// An active machine in the game world.
 /// A composition of some intrinsic, extrinsic properties, logic and inventory.
 /// </summary>
-public class Machine : IDisposable
+internal class Machine : IMachine, IDisposable
 {
     private readonly MachineLogic _logic;
 

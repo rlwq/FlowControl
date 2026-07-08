@@ -17,7 +17,7 @@ namespace FlowControlModel.World;
 /// <para>IMPORTANT: Public methods of this class must be used exclusively by <c>ChunkManager</c> as it can't
 /// guarantee data integrity by itself.</para>
 /// </remarks>
-public class Chunk
+internal class Chunk
 {
     public event Action<Machine>? MachinePlacedInChunk;
     public event Action<Machine>? MachineRemovedFromChunk;

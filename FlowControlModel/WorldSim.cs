@@ -86,7 +86,7 @@ public class RemoveMachineAt(Vector2I coord) : WorldSimCommand
     {
         if (sim._chunkManager.IsCellEmpty(Coord))
             return;
-        var machine = sim._chunkManager.GetMachineAt(Coord);
+        var machine = sim._chunkManager.GetMachineInstAt(Coord);
         sim._chunkManager.RemoveMachine(machine);
     }
 }

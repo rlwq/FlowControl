@@ -17,10 +17,10 @@ public interface IChunkManager
     Registry Registry { get; }
 
     /// <summary> Emitted when a machine is placed in the world. </summary>
-    event Action<Machine>? MachinePlaced;
+    event Action<IMachine>? MachinePlaced;
 
     /// <summary> Emitted when a machine is removed from the world. </summary>
-    event Action<Machine>? MachineRemoved;
+    event Action<IMachine>? MachineRemoved;
 
     /// <summary> Emitted when an entity is added to the world. </summary>
     event Action<IEntity>? EntityPlaced;
@@ -35,13 +35,13 @@ public interface IChunkManager
     GroundLite GetGroundLiteAt(Vector2I coord);
 
     /// <summary> Returns the Machine object linked to the specified global position. Returns "Air" if empty. </summary>
-    Machine GetMachineAt(Vector2I coord);
+    IMachine GetMachineAt(Vector2I coord);
 
     /// <summary> Returns all entities obtained by the specified chunk. </summary>
     IEntity[] GetEntitiesInChunk(Vector2I chunkCoord);
 
     /// <summary> Returns all entities obtained by the specified chunk. </summary>
-    Machine[] GetMachinesInChunk(Vector2I chunkCoord);
+    IMachine[] GetMachinesInChunk(Vector2I chunkCoord);
 }
 
 /// <summary>
@@ -60,10 +60,10 @@ public class ChunkManager(Registry registry) : IChunkManager
     public Registry Registry { get; } = registry;
 
     /// <summary> Emitted when a machine is placed in the world. </summary>
-    public event Action<Machine>? MachinePlaced;
+    public event Action<IMachine>? MachinePlaced;
 
     /// <summary> Emitted when a machine is removed from the world. </summary>
-    public event Action<Machine>? MachineRemoved;
+    public event Action<IMachine>? MachineRemoved;
 
     /// <summary> Emitted when an entity is added to the world. </summary>
     public event Action<IEntity>? EntityPlaced;
@@ -95,7 +95,7 @@ public class ChunkManager(Registry registry) : IChunkManager
     /// Places the specified Machine in the game world.
     /// Links all occupied tiles in the corresponding Chunks. Throws if the region is not empty.
     /// </summary>
-    public void PlaceMachine(Machine machine)
+    internal void PlaceMachine(Machine machine)
     {
         var localCoord = Registry.ToLocalI(machine.Coord);
 
@@ -125,7 +125,7 @@ public class ChunkManager(Registry registry) : IChunkManager
     /// Removes the Machine from the world entirely and frees all occupied tiles.
     /// Throws if the starting tile is not occupied by a Machine.
     /// </summary>
-    public void RemoveMachine(Machine machine)
+    internal void RemoveMachine(Machine machine)
     {
         Debug.Assert(!IsCellEmpty(machine.Coord), $"No machine found to remove at {machine.Coord}");
 
@@ -151,14 +151,17 @@ public class ChunkManager(Registry registry) : IChunkManager
     }
 
     /// <summary> Returns the Machine object linked to the specified global position. Returns "Air" if empty. </summary>
-    public Machine GetMachineAt(Vector2I coord)
+    public IMachine GetMachineAt(Vector2I coord) => GetMachineInstAt(coord);
+
+    /// <summary> Same as <see cref="GetMachineAt"/>, but returns the concrete <see cref="Machine"/>. </summary>
+    internal Machine GetMachineInstAt(Vector2I coord)
     {
         var localCoord = Registry.ToLocalI(coord);
         return LoadChunk(localCoord.Chunk).GetMachineAt(localCoord.Cell);
     }
 
     /// <summary> Returns all Machine instances located within the specified chunk. </summary>
-    public Machine[] GetMachinesInChunk(Vector2I chunkCoord)
+    public IMachine[] GetMachinesInChunk(Vector2I chunkCoord)
     {
         return LoadChunk(chunkCoord).GetMachines();
     }
@@ -241,7 +244,7 @@ public class ChunkManager(Registry registry) : IChunkManager
         return chunk;
     }
 
-    public CellObserver CreateCellObserver(Vector2I coord)
+    internal CellObserver CreateCellObserver(Vector2I coord)
     {
         var localCoord = Registry.ToLocalI(coord);
         return new CellObserver(LoadChunk(localCoord.Chunk), localCoord.Cell, coord);

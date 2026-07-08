@@ -24,7 +24,7 @@ public partial class ChunkView : Node2D
 
     private Registry _registry = null!;
     private ResourceRegistry _resourceRegistry = null!;
-    private readonly Dictionary<Machine, World.MachineView> _machineViews = [];
+    private readonly Dictionary<IMachine, World.MachineView> _machineViews = [];
     private readonly Dictionary<IEntity, EntityView> _entityViews = [];
 
     /// <summary> Initializes the chunk view with essential registries. </summary>
@@ -42,7 +42,7 @@ public partial class ChunkView : Node2D
     }
 
     /// <summary> Creates and attaches a visual representation for a machine. </summary>
-    public void BuildMachineView(Machine machineInst)
+    public void BuildMachineView(IMachine machineInst)
     {
         Debug.Assert(!_machineViews.ContainsKey(machineInst));
 
@@ -52,7 +52,7 @@ public partial class ChunkView : Node2D
     }
 
     /// <summary> Destroys and removes the visual representation of a machine. </summary>
-    public void RemoveMachineView(Machine machineInst)
+    public void RemoveMachineView(IMachine machineInst)
     {
         if (!_machineViews.TryGetValue(machineInst, out var view)) return;
         RemoveChild(view);

@@ -98,7 +98,7 @@ public partial class ChunkManagerView : Node
 
     private bool IsLoaded(Vector2I chunkCoord) => _chunkViews.ContainsKey(chunkCoord);
 
-    private void OnMachinePlaced(Machine machineInst)
+    private void OnMachinePlaced(IMachine machineInst)
     {
         var localPos = _chunkManager.Registry.ToLocal(machineInst.Coord);
         if (!IsLoaded(localPos.Chunk))
@@ -106,7 +106,7 @@ public partial class ChunkManagerView : Node
         _chunkViews[localPos.Chunk].BuildMachineView(machineInst);
     }
 
-    private void OnMachineRemoved(Machine machineInst)
+    private void OnMachineRemoved(IMachine machineInst)
     {
         var localPos = _chunkManager.Registry.ToLocal(machineInst.Coord);
         if (!IsLoaded(localPos.Chunk))

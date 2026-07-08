@@ -5,7 +5,7 @@ namespace FlowControlBusiness.Machines;
 public class Dumb : MachineLogic
 {
     /// <summary> Does nothing. </summary>
-    public override void Tick(Machine machineInst) { }
+    public override void Tick(IMachine machineInst) { }
 
     public override MachineLogic Copy() { return new Dumb(); }
 }

@@ -34,7 +34,7 @@ public partial class ResourceRegistry
     public Vector2I GetGroundTileLite(StringName kind) => _groundTilesAtlasCords[kind];
 
     /// <summary> Constructs and configures a <see cref="World.MachineView"/> in a way to achieve the 2.5D effect. </summary>
-    public World.MachineView BuildMachineView(Machine machineInst)
+    public World.MachineView BuildMachineView(IMachine machineInst)
     {
         var texture = _machineTextures[machineInst.Lite.Kind];
         var machineView = new World.MachineView

@@ -24,7 +24,7 @@ public class Manipulator : MachineInteractiveLogic
         _output = observers[1];
     }
     
-    public override void Tick(Machine machineInst)
+    public override void Tick(IMachine machineInst)
     {
         if (_motionTicks < HalfRotationTime) {
             _motionTicks++;
