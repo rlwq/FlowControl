@@ -12,7 +12,15 @@ namespace FlowControlBusiness.Machines;
 /// </summary>
 public class Manipulator : MachineInteractiveLogic
 {
-    public enum State { Delivering, Fetching }
+    /// <summary> Which half of the swing cycle the arm is in. </summary>
+    public enum State
+    {
+        /// <summary> The arm carries an item towards the output cell. </summary>
+        Delivering,
+        /// <summary> The arm returns empty-handed towards the input cell. </summary>
+        Fetching,
+    }
+
     private const int HalfRotationTime = 10;
 
     private CellObserver _input = null!;
@@ -20,6 +28,7 @@ public class Manipulator : MachineInteractiveLogic
     private State _state = State.Fetching;
     private int _motionTicks = HalfRotationTime;
 
+    /// <inheritdoc/>
     public override void LinkObservers(IList<CellObserver> observers)
     {
         Debug.Assert(observers is { Count: 2 });
@@ -28,6 +37,7 @@ public class Manipulator : MachineInteractiveLogic
         _output = observers[1];
     }
 
+    /// <summary> Executes one quant of the logic: swings the arm or moves one item. </summary>
     public override void Tick(IMachine machineInst)
     {
         // The arm is still swinging towards its target cell
@@ -63,5 +73,6 @@ public class Manipulator : MachineInteractiveLogic
         _motionTicks = 0;
     }
 
+    /// <inheritdoc/>
     public override MachineLogic Copy() => new Manipulator();
 }

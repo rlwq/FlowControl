@@ -29,6 +29,10 @@ public class WorldSim
     /// <summary> The logical state of the world. </summary>
     public IChunkManager ChunkManager => _chunkManager;
 
+    /// <summary> Creates a simulation over a fresh world produced by the specified generator. </summary>
+    /// <param name="registry"> The catalog of all registered kinds. </param>
+    /// <param name="grid"> Geometry of the world's chunk grid. </param>
+    /// <param name="generator"> The ground generator used when chunks materialize. </param>
     public WorldSim(Registry registry, WorldGrid grid, IWorldGenerator generator)
     {
         _registry = registry;

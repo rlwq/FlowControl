@@ -14,5 +14,6 @@ public class Oven : MachineLogic
             _fuel -= 0.1f;
     }
     
+    /// <inheritdoc/>
     public override MachineLogic Copy() => new Oven();
 }

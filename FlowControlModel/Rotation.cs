@@ -2,7 +2,17 @@
 namespace FlowControlModel;
 
 /// <summary> A cardinal orientation of a machine, in clockwise quarter turns. </summary>
-public enum Rotation { North = 0, East = 1, South = 2, West = 3 }
+public enum Rotation
+{
+    /// <summary> The default, unrotated orientation. </summary>
+    North = 0,
+    /// <summary> One quarter turn clockwise. </summary>
+    East = 1,
+    /// <summary> Two quarter turns (upside down). </summary>
+    South = 2,
+    /// <summary> Three quarter turns clockwise. </summary>
+    West = 3,
+}
 
 /// <summary> Geometry helpers for <see cref="Rotation"/>. </summary>
 public static class RotationM

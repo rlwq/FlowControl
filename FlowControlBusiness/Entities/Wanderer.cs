@@ -18,6 +18,7 @@ public class Wanderer(float speed = 0.05f) : EntityLogic
     private Vec2 _step = Vec2.Zero;
     private int _phaseTicksLeft;
 
+    /// <summary> Executes one quant of the logic: keeps walking, grazing or picks a new phase. </summary>
     public override Vec2 Tick(IEntity entity)
     {
         _rng ??= new Random(unchecked((int)entity.Id * 7919 + 12345));
@@ -40,5 +41,6 @@ public class Wanderer(float speed = 0.05f) : EntityLogic
         return _step;
     }
 
+    /// <inheritdoc/>
     public override EntityLogic Copy() => new Wanderer(speed);
 }

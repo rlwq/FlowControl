@@ -3,13 +3,25 @@ using System.Collections.Generic;
 
 namespace FlowControlModel.Inventories;
 
+/// <summary> Slot counts of an inventory's three sections. </summary>
+/// <param name="input"> Number of slots in the input section. </param>
+/// <param name="blob"> Number of slots in the general-purpose (blob) section. </param>
+/// <param name="output"> Number of slots in the output section. </param>
 public readonly struct InventoryDimensions(int input, int blob, int output)
 {
+    /// <summary> Dimensions of an inventory with no slots at all. </summary>
     public static InventoryDimensions Empty => new(0, 0, 0);
+
+    /// <summary> Number of slots in the input section. </summary>
     public readonly int Input = input;
+
+    /// <summary> Number of slots in the general-purpose (blob) section. </summary>
     public readonly int Blob = blob;
+
+    /// <summary> Number of slots in the output section. </summary>
     public readonly int Output = output;
-    
+
+    /// <summary> Whether all three sections have zero slots. </summary>
     public bool IsEmpty => Input == 0 && Blob == 0 && Output == 0;
 }
 
