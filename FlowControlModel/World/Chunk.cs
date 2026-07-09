@@ -4,7 +4,6 @@ using System.Diagnostics;
 using FlowControlModel.Factories;
 using FlowControlModel.Entities;
 using FlowControlModel.Machines;
-using Godot;
 
 namespace FlowControlModel.World;
 
@@ -22,108 +21,141 @@ internal class Chunk
     public event Action<Machine>? MachinePlacedInChunk;
     public event Action<Machine>? MachineRemovedFromChunk;
 
-    private readonly Registry _registry;
+    private readonly WorldGrid _grid;
 
-    private Vector2I _chunkCoord;
-    private readonly HashSet<IEntity> _entities = [];
-    private readonly HashSet<Machines.Machine> _machines = [];
-    private readonly Machines.Machine?[,] _machineTiles;
+    private Vec2I _chunkCoord;
+    private readonly HashSet<Entity> _entities = [];
+    private readonly HashSet<Machine> _machines = [];
+    private readonly HashSet<GroundItem> _groundItems = [];
+    private readonly Machine?[,] _machineTiles;
     private readonly GroundLite[,] _groundTiles;
+    private readonly Dictionary<Vec2I, GroundLite> _spawnerCells = [];
 
     /// <summary> Amount of tiles along one side of the chunk. </summary>
-    public int ChunkSize => _registry.ChunkSize;
+    public int ChunkSize => _grid.ChunkSize;
 
     /// <summary> Gets the world-space boundaries of this chunk, in integer coordinates. </summary>
-    public Rect2I ChunkRectI => new(_chunkCoord * ChunkSize, new Vector2I(ChunkSize, ChunkSize));
+    public RectI ChunkRectI => new(_chunkCoord * ChunkSize, new Vec2I(ChunkSize, ChunkSize));
 
     /// <summary> Gets the world-space boundaries of this chunk, in floating-point coordinates. </summary>
-    public Rect2 ChunkRect => new(_chunkCoord * ChunkSize, new Vector2I(ChunkSize, ChunkSize));
+    public Rect ChunkRect => new(_chunkCoord * ChunkSize, new Vec2I(ChunkSize, ChunkSize));
+
+    /// <summary> Local coordinates of tiles whose ground periodically spawns items. </summary>
+    public IReadOnlyDictionary<Vec2I, GroundLite> SpawnerCells => _spawnerCells;
 
     /// <summary> Returns the ground type at the specified local coordinates. </summary>
-    public GroundLite GetGroundLite(Vector2I localPos) => _groundTiles[localPos.X, localPos.Y];
+    public GroundLite GetGroundLite(Vec2I localPos) => _groundTiles[localPos.X, localPos.Y];
 
-    /// <summary> Initializes a new chunk. </summary>
-    public Chunk(Registry registry, Vector2I chunkCoord)
+    /// <summary> Replaces the ground type at the specified local coordinates. </summary>
+    public void SetGroundLite(Vec2I localCoord, GroundLite lite)
     {
-        _registry = registry;
+        Debug.Assert(_grid.LocalRectI.HasPoint(localCoord));
+        _groundTiles[localCoord.X, localCoord.Y] = lite;
+
+        if (lite.Spawner != null) _spawnerCells[localCoord] = lite;
+        else _spawnerCells.Remove(localCoord);
+    }
+
+    /// <summary> Initializes a new chunk, generating its ground layer. </summary>
+    public Chunk(WorldGrid grid, IWorldGenerator generator, Vec2I chunkCoord)
+    {
+        _grid = grid;
         _chunkCoord = chunkCoord;
 
-        _machineTiles = new Machines.Machine[ChunkSize, ChunkSize];
+        _machineTiles = new Machine[ChunkSize, ChunkSize];
         _groundTiles = new GroundLite[ChunkSize, ChunkSize];
 
-        // Default world generation: checkerboard pattern
+        var origin = _chunkCoord * ChunkSize;
         for (int i = 0; i < ChunkSize; i++)
         for (int j = 0; j < ChunkSize; j++)
         {
-            _groundTiles[j, i] =
-                (i + j) % 2 == 0
-                    ? _registry.GetGroundLite("stone")
-                    : _registry.GetGroundLite("grass");
+            var lite = generator.GetGroundAt(origin + new Vec2I(j, i));
+            _groundTiles[j, i] = lite;
+            if (lite.Spawner != null)
+                _spawnerCells[new Vec2I(j, i)] = lite;
         }
     }
 
-    /// <summary> Returns an array of all unique machines registered in this chunk. </summary>
-    public Machines.Machine[] GetMachines() => [.. _machines];
+    /// <summary> Returns an array of all unique machines overlapping this chunk. </summary>
+    public Machine[] GetMachines() => [.. _machines];
 
     /// <summary> Adds a machine to the chunk's internal registry. </summary>
-    public void RegisterMachine(Machines.Machine machine) => _machines.Add(machine);
+    public void RegisterMachine(Machine machine) => _machines.Add(machine);
 
     /// <summary> Removes a machine from the chunk's internal registry. </summary>
-    public void UnregisterMachine(Machines.Machine machine)
+    public void UnregisterMachine(Machine machine)
     {
-        Debug.Assert(ChunkRectI.HasPoint(machine.Coord));
         Debug.Assert(_machines.Contains(machine));
-        machine.Remove();
         _machines.Remove(machine);
     }
 
     /// <summary> Associates a specific local tile with a machine instance. </summary>
     /// <param name="localCoord">Coordinates relative to the chunk (0 to ChunkSize-1).</param>
     /// <param name="machine">The machine to link to the tile.</param>
-    public void LinkTile(Vector2I localCoord, Machine machine)
+    public void LinkTile(Vec2I localCoord, Machine machine)
     {
-        Debug.Assert(_registry.ChunkRectI.HasPoint(localCoord));
+        Debug.Assert(_grid.LocalRectI.HasPoint(localCoord));
         Debug.Assert(_machineTiles[localCoord.X, localCoord.Y] == null);
         _machineTiles[localCoord.X, localCoord.Y] = machine;
     }
 
     /// <summary> Clears the machine reference from a specific local tile. </summary>
-    public void FreeTile(Vector2I localCoord)
+    public void FreeTile(Vec2I localCoord)
     {
-        Debug.Assert(_registry.ChunkRectI.HasPoint(localCoord));
+        Debug.Assert(_grid.LocalRectI.HasPoint(localCoord));
         Debug.Assert(_machineTiles[localCoord.X, localCoord.Y] != null);
         _machineTiles[localCoord.X, localCoord.Y] = null;
     }
 
-    /// <summary> Returns the machine occupying the local tile. </summary>
-    public Machine GetMachineAt(Vector2I localCoord)
+    /// <summary> Returns the machine occupying the local tile, or <c>null</c> if it is empty. </summary>
+    public Machine? GetMachineAt(Vec2I localCoord)
     {
-        Debug.Assert(_registry.ChunkRectI.HasPoint(localCoord));
-        return _machineTiles[localCoord.X, localCoord.Y]!;
+        Debug.Assert(_grid.LocalRectI.HasPoint(localCoord));
+        return _machineTiles[localCoord.X, localCoord.Y];
     }
 
     /// <summary> Checks if there is no machine at the specified local coordinates. </summary>
-    public bool IsAirAt(Vector2I localCoord)
+    public bool IsAirAt(Vec2I localCoord)
     {
-        Debug.Assert(_registry.ChunkRectI.HasPoint(localCoord));
+        Debug.Assert(_grid.LocalRectI.HasPoint(localCoord));
         return _machineTiles[localCoord.X, localCoord.Y] == null;
     }
 
     /// <summary> Returns an array of all entities registered in this chunk. </summary>
-    public IEntity[] GetEntities() => [.. _entities];
+    public Entity[] GetEntities() => [.. _entities];
 
     /// <summary> Adds an entity to the chunk. </summary>
-    public void AddEntity(IEntity entity)
+    public void AddEntity(Entity entity)
     {
         Debug.Assert(ChunkRect.HasPoint(entity.Coord));
         _entities.Add(entity);
     }
 
     /// <summary> Removes an entity from the chunk. </summary>
-    public void RemoveEntity(IEntity entity)
+    public void RemoveEntity(Entity entity)
     {
         Debug.Assert(_entities.Contains(entity));
         _entities.Remove(entity);
+    }
+
+    /// <summary> Returns an array of all ground items lying in this chunk. </summary>
+    public GroundItem[] GetGroundItems() => [.. _groundItems];
+
+    /// <summary> All ground items lying in this chunk, without copying. </summary>
+    public IReadOnlyCollection<GroundItem> GroundItems => _groundItems;
+
+    /// <summary> Adds a ground item to the chunk. </summary>
+    public void AddGroundItem(GroundItem item)
+    {
+        Debug.Assert(ChunkRect.HasPoint(item.Coord));
+        _groundItems.Add(item);
+    }
+
+    /// <summary> Removes a ground item from the chunk. </summary>
+    public void RemoveGroundItem(GroundItem item)
+    {
+        Debug.Assert(_groundItems.Contains(item));
+        _groundItems.Remove(item);
     }
 
     public void InvokeMachinePlacedInChunk(Machine machine) =>

@@ -1,5 +1,4 @@
 using FlowControlModel.Machines;
-using Godot;
 
 namespace FlowControlBusiness.Machines;
 
@@ -13,7 +12,6 @@ public class Oven : MachineLogic
     {
         if (_fuel > 0)
             _fuel -= 0.1f;
-        GD.Print(_fuel);
     }
     
     public override MachineLogic Copy() => new Oven();

@@ -1,13 +1,12 @@
 using System;
-using Godot;
 
 namespace FlowControlModel.Inventories;
 
 /// <summary> Contains the intrinsic properties of an item type. </summary>
-public class ItemLite(StringName kind, int stackSize) : IEquatable<ItemLite>
+public class ItemLite(string kind, int stackSize) : IEquatable<ItemLite>
 {
     /// <summary> A unique string identifier for the item. </summary>
-    public readonly StringName Kind = kind;
+    public readonly string Kind = kind;
 
     /// <summary> The amount of items of that type that can be placed in a single inventory slot. </summary>
     public readonly int StackSize = stackSize;

@@ -1,4 +1,3 @@
-using Godot;
 using FlowControlModel.Inventories;
 
 namespace FlowControlModel.Machines;
@@ -9,10 +8,10 @@ namespace FlowControlModel.Machines;
 public class MachineLite
 {
     /// <summary> Machine type's unique identifier. </summary>
-    public readonly StringName Kind;
+    public readonly string Kind;
 
     /// <summary> An integer vector representing the dimensions (width and height) of the machine type. </summary>
-    public readonly Vector2I Dimensions;
+    public readonly Vec2I Dimensions;
     
     /// <summary> A structure representing count of slots in machine's inventory. </summary>
     public readonly InventoryDimensions InventoryDimensions;
@@ -21,7 +20,7 @@ public class MachineLite
     /// <param name="dimensions"> An integer vector representing the
     /// dimensions (width and height) of the machine type. </param>
     /// <param name="invDims"> Dimensions of the machine's inventory. </param>
-    public MachineLite(StringName kind, Vector2I dimensions, InventoryDimensions? invDims = null)
+    public MachineLite(string kind, Vec2I dimensions, InventoryDimensions? invDims = null)
     {
         Kind = kind;
         Dimensions = dimensions;

@@ -1,4 +1,5 @@
-using Godot;
+using System;
+using FlowControlModel.Inventories;
 
 namespace FlowControlModel.Entities;
 
@@ -7,40 +8,49 @@ namespace FlowControlModel.Entities;
 /// </summary>
 public interface IEntity
 {
-    /// <summary> Static definition data for this machine type. Immutable. </summary>
+    /// <summary> Static definition data for this entity type. Immutable. </summary>
     EntityLite Lite { get; }
 
     /// <summary> Global position (center). Immutable. </summary>
-    Vector2 Coord { get; }
+    Vec2 Coord { get; }
 
     /// <summary> The collision box in world coordinates. Immutable. </summary>
-    Rect2 Box { get; }
+    Rect Box { get; }
 
-    /// <summary> Machine's unique identifier. </summary>
+    /// <summary> Entity's unique identifier. </summary>
     uint Id { get; }
+
+    /// <summary> Entity's inventory. Empty for entity kinds registered without one. </summary>
+    Inventory Inventory { get; }
 }
 
 /// <summary>
-/// An Enity instance which can be placed in the world or used as a prototype.
+/// An Entity instance which can be placed in the world or used as a prototype.
 /// </summary>
-public class Entity(uint id, EntityLite lite, Vector2 coord) : IEntity
+internal class Entity(uint id, EntityLite lite, Vec2 coord, EntityLogic? logic) : IEntity, IDisposable
 {
-    private readonly uint _id = id;
-    private readonly EntityLite _lite = lite;
+    /// <summary> Entity's unique identifier. </summary>
+    public uint Id { get; } = id;
 
-    /// <summary> Machine's unique identifier. </summary>
-    public uint Id => _id;
+    /// <summary> Static definition data for this entity type. </summary>
+    public EntityLite Lite { get; } = lite;
 
-    /// <summary> Static definition data for this machine type. </summary>
-    public EntityLite Lite => _lite;
-
-    /// <summary> Global position (center). </summary>
-    public Vector2 Coord
-    {
-        get => coord;
-        set => coord = value;
-    }
+    /// <summary> Global position (center). Must be set exclusively by <c>ChunkManager.MoveEntity</c>. </summary>
+    public Vec2 Coord { get; set; } = coord;
 
     /// <summary> The collision box in world coordinates. </summary>
-    public Rect2 Box => new(Coord - Lite.BoxSize / 2, Lite.BoxSize);
+    public Rect Box => new(Coord - Lite.BoxSize / 2, Lite.BoxSize);
+
+    /// <summary> Entity's inventory. Empty for entity kinds registered without one. </summary>
+    public Inventory Inventory { get; } = new(lite.InventoryDimensions);
+
+    /// <summary> The autonomous behavior of the entity. <c>null</c> for controlled entities. </summary>
+    public EntityLogic? Logic { get; } = logic;
+
+    /// <summary> Prepares to be deleted. </summary>
+    public void Dispose()
+    {
+        Logic?.Dispose();
+        GC.SuppressFinalize(this);
+    }
 }

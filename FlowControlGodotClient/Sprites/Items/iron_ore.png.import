@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d20g5nnmctmd0"
-path="res://.godot/imported/manipulator.png-2a433d027467156c816c50349efd6fb4.ctex"
+uid="uid://ir3wbexnf17i"
+path="res://.godot/imported/iron_ore.png-5e6ef426e917984b2d5b713188cf66ec.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/MachineSprites/manipulator.png"
-dest_files=["res://.godot/imported/manipulator.png-2a433d027467156c816c50349efd6fb4.ctex"]
+source_file="res://Sprites/Items/iron_ore.png"
+dest_files=["res://.godot/imported/iron_ore.png-5e6ef426e917984b2d5b713188cf66ec.ctex"]
 
 [params]
 

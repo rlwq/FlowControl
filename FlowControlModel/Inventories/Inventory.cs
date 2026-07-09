@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace FlowControlModel.Inventories;
 
@@ -134,6 +135,17 @@ public class Inventory
         return item;
     }
     
+    /// <summary> Enumerates all non-empty stacks across the input, blob and output sections. </summary>
+    public IEnumerable<ItemStack> EnumerateStacks()
+    {
+        foreach (var slot in _input)
+            if (!slot.IsEmpty) yield return slot;
+        foreach (var slot in _blob)
+            if (!slot.IsEmpty) yield return slot;
+        foreach (var slot in _output)
+            if (!slot.IsEmpty) yield return slot;
+    }
+
     /// <summary>
     /// Extracts and returns a bunch of items of the same type, up to the requested amount (if possible).
     /// </summary>
@@ -167,9 +179,5 @@ public struct ItemStack(int count, ItemLite lite)
     public readonly ItemLite Lite = lite;
     
     /// <summary> Tells whether the stack is empty. </summary>
-    public bool IsEmpty
-    {
-        readonly get => Count == 0;
-        set => Count = value ? 0 : Count;
-    }
+    public readonly bool IsEmpty => Count == 0;
 }

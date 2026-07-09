@@ -1,9 +1,9 @@
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using FlowControlModel.Machines;
 using FlowControlModel.Entities;
 using FlowControlModel.Inventories;
-using Godot;
+using FlowControlModel.World;
 
 namespace FlowControlModel.Factories;
 
@@ -11,111 +11,121 @@ public partial class Registry
 {
     /// <summary>
     /// Implements the Builder pattern to safely construct and configure a <see cref="Registry"/>.
+    /// Misuse (duplicate registrations, use after <see cref="Build"/>, dangling references)
+    /// throws immediately instead of corrupting the registry.
     /// </summary>
     public class RegistryBuilder
     {
         private Registry? _registry = new();
+        private readonly Dictionary<string, (string ItemKind, int PeriodTicks)> _pendingSpawners = [];
 
-        /// <summary> Initializes a new builder and registers default types like <c>"air"</c>. </summary>
+        /// <summary> The registry under construction. Throws if <see cref="Build"/> was already called. </summary>
+        private Registry Registry =>
+            _registry ?? throw new InvalidOperationException("Registry is already built.");
+
+        /// <summary> Initializes a new builder and registers default types like <c>"air"</c> and <c>"player"</c>. </summary>
         public RegistryBuilder()
         {
-            RegisterEntity("player", new Vector2I(8, 8));
-            RegisterMachine("air", new Vector2I(1, 1));
+            RegisterEntity("player", new Vec2(0.75f, 0.75f), new InventoryDimensions(0, 16, 0));
+            RegisterMachine("air", new Vec2I(1, 1));
         }
 
         /// <summary> Registers a new machine type in the registry. </summary>
-        public RegistryBuilder RegisterMachine(StringName kind, Vector2I dimensions)
+        public RegistryBuilder RegisterMachine(string kind, Vec2I dimensions, InventoryDimensions? invDims = null)
         {
-            Debug.Assert(_registry != null, "Registry is already built.");
-            Debug.Assert(
-                !_registry._machineLites.ContainsKey(kind),
-                $"Machine '{kind}' is already registered."
-            );
+            if (Registry._machineLites.ContainsKey(kind))
+                throw new ArgumentException($"Machine '{kind}' is already registered.", nameof(kind));
 
-            _registry._machineLites.Add(kind, new MachineLite(kind, dimensions));
+            Registry._machineLites.Add(kind, new MachineLite(kind, dimensions, invDims));
             return this;
         }
-        
+
         /// <summary>
         /// Registers a machine logic prototype and associates it with one machine kind.
-        /// If a collections of Vector2I is provided (relative offsets), logic is
+        /// If a collections of Vec2I is provided (relative offsets), logic is
         /// considered iterative (can interact with other machines).
         /// </summary>
-        public RegistryBuilder RegisterMachineLogic(StringName kind, MachineLogic logic, IReadOnlyCollection<Vector2I>? offsets = null)
+        public RegistryBuilder RegisterMachineLogic(string kind, MachineLogic logic, IReadOnlyCollection<Vec2I>? offsets = null)
         {
-            Debug.Assert(_registry != null, "Registry is already built.");
-            Debug.Assert(
-                !_registry._machineLogics.ContainsKey(kind) ||
-                !_registry._machineLogicObserverOffsets.ContainsKey(kind),
-                $"Machine logic '{kind}' is already registered."
-                );
-            _registry._machineLogics.Add(kind, logic);
-            
-            if (offsets == null) return this;
-            
-            _registry._machineLogicObserverOffsets.Add(kind, new Vector2I[offsets.Count]);
-            
-            var i = 0;
-            foreach (var offset in offsets)
-                _registry._machineLogicObserverOffsets[kind][i++] = offset;
+            if (!Registry._machineLites.ContainsKey(kind))
+                throw new ArgumentException($"Machine '{kind}' is not registered.", nameof(kind));
+            if (Registry._machineLogics.ContainsKey(kind))
+                throw new ArgumentException($"Machine logic '{kind}' is already registered.", nameof(kind));
 
+            Registry._machineLogics.Add(kind, logic);
+
+            if (offsets == null) return this;
+
+            Registry._machineLogicObserverOffsets.Add(kind, [.. offsets]);
             return this;
         }
-        
-        /// <summary> Registers a new item type in the registry. </summary>
-        public RegistryBuilder RegisterItem(StringName kind, int stackSize)
-        {
-            Debug.Assert(_registry != null, "Registry is already built.");
-            Debug.Assert(
-                !_registry._itemLites.ContainsKey(kind),
-                $"Item '{kind}' is already registered."
-            );
 
-            _registry._itemLites.Add(kind, new ItemLite(kind, stackSize));
+        /// <summary> Registers a new item type in the registry. </summary>
+        public RegistryBuilder RegisterItem(string kind, int stackSize)
+        {
+            if (Registry._itemLites.ContainsKey(kind))
+                throw new ArgumentException($"Item '{kind}' is already registered.", nameof(kind));
+
+            Registry._itemLites.Add(kind, new ItemLite(kind, stackSize));
             return this;
         }
 
         /// <summary> Registers a new entity type in the registry. </summary>
-        public RegistryBuilder RegisterEntity(StringName kind, Vector2 boxSize)
+        public RegistryBuilder RegisterEntity(string kind, Vec2 boxSize, InventoryDimensions? invDims = null)
         {
-            Debug.Assert(_registry != null, "Registry is already built.");
-            Debug.Assert(
-                !_registry._entityLites.ContainsKey(kind),
-                $"Entity '{kind}' is already registered."
-            );
+            if (Registry._entityLites.ContainsKey(kind))
+                throw new ArgumentException($"Entity '{kind}' is already registered.", nameof(kind));
 
-            _registry._entityLites.Add(kind, new EntityLite(kind, boxSize));
+            Registry._entityLites.Add(kind, new EntityLite(kind, boxSize, invDims));
             return this;
         }
 
-        /// <summary> Registers a new ground type in the registry. </summary>
-        public RegistryBuilder RegisterGround(StringName kind)
+        /// <summary> Registers an entity logic prototype and associates it with one entity kind. </summary>
+        public RegistryBuilder RegisterEntityLogic(string kind, EntityLogic logic)
         {
-            Debug.Assert(_registry != null, "Registry is already built.");
-            Debug.Assert(
-                !_registry._groundLites.ContainsKey(kind),
-                $"Ground '{kind}' is already registered."
-            );
+            if (!Registry._entityLites.ContainsKey(kind))
+                throw new ArgumentException($"Entity '{kind}' is not registered.", nameof(kind));
+            if (Registry._entityLogics.ContainsKey(kind))
+                throw new ArgumentException($"Entity logic '{kind}' is already registered.", nameof(kind));
 
-            _registry._groundLites.Add(kind, new GroundLite(kind));
+            Registry._entityLogics.Add(kind, logic);
             return this;
         }
 
-        /// <summary> Sets the edge length for all chunks in the resulting registry. </summary>
-        public RegistryBuilder SetChunkSize(int chunkSize)
+        /// <summary>
+        /// Registers a new ground type in the registry. When <paramref name="spawnsItemKind"/>
+        /// is provided, every tile of this ground spawns that item every
+        /// <paramref name="spawnPeriodTicks"/> ticks (e.g. ore deposits). The item kind is
+        /// resolved when <see cref="Build"/> is called, so it may be registered later.
+        /// </summary>
+        public RegistryBuilder RegisterGround(string kind, string? spawnsItemKind = null, int spawnPeriodTicks = 0)
         {
-            Debug.Assert(_registry != null, "Registry is already built.");
+            if (Registry._groundLites.ContainsKey(kind))
+                throw new ArgumentException($"Ground '{kind}' is already registered.", nameof(kind));
+            if (spawnsItemKind != null && spawnPeriodTicks <= 0)
+                throw new ArgumentException(
+                    $"Ground '{kind}' spawns '{spawnsItemKind}' but its spawn period is not positive.",
+                    nameof(spawnPeriodTicks));
 
-            _registry.ChunkSize = chunkSize;
+            Registry._groundLites.Add(kind, new GroundLite(kind));
+            if (spawnsItemKind != null)
+                _pendingSpawners.Add(kind, (spawnsItemKind, spawnPeriodTicks));
             return this;
         }
 
         /// <summary> Finalizes the building process and returns the configured <see cref="Registry"/>. </summary>
         public Registry Build()
         {
-            Debug.Assert(_registry != null, "Registry is already built.");
+            var result = Registry;
 
-            var result = _registry;
+            foreach (var (groundKind, (itemKind, periodTicks)) in _pendingSpawners)
+            {
+                if (!result._itemLites.TryGetValue(itemKind, out var itemLite))
+                    throw new InvalidOperationException(
+                        $"Ground '{groundKind}' spawns item '{itemKind}', which is not registered.");
+                result._groundLites[groundKind].Spawner = new ItemSpawner(itemLite, periodTicks);
+            }
+
             _registry = null;
             return result;
         }

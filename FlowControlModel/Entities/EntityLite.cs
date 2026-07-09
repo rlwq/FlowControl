@@ -1,4 +1,4 @@
-using Godot;
+using FlowControlModel.Inventories;
 
 namespace FlowControlModel.Entities;
 
@@ -7,11 +7,15 @@ namespace FlowControlModel.Entities;
 /// </summary>
 /// <param name="kind"> Entity type's unique identifier. </param>
 /// <param name="boxSize"> A vector representing the collison box size (width and height) in grid cells of the entity type. </param>
-public class EntityLite(StringName kind, Vector2 boxSize)
+/// <param name="invDims"> Dimensions of the entity's inventory. Empty when not provided. </param>
+public class EntityLite(string kind, Vec2 boxSize, InventoryDimensions? invDims = null)
 {
     /// <summary> Entity type's unique identifier. </summary>
-    public readonly StringName Kind = kind;
+    public readonly string Kind = kind;
 
     /// <summary> A vector representing the collison box size (width and height) in grid cells of the entity type. </summary>
-    public readonly Vector2 BoxSize = boxSize;
+    public readonly Vec2 BoxSize = boxSize;
+
+    /// <summary> A structure representing count of slots in the entity's inventory. </summary>
+    public readonly InventoryDimensions InventoryDimensions = invDims ?? InventoryDimensions.Empty;
 }

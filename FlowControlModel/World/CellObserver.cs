@@ -1,6 +1,5 @@
 using System;
 using FlowControlModel.Machines;
-using Godot;
 
 namespace FlowControlModel.World;
 
@@ -9,7 +8,7 @@ namespace FlowControlModel.World;
 /// </summary>
 public sealed class CellObserver : IDisposable
 {
-    private readonly Vector2I _coord;
+    private readonly Vec2I _coord;
     private readonly Chunk _chunk;
 
     private Machine? _machine;
@@ -22,14 +21,14 @@ public sealed class CellObserver : IDisposable
     /// <summary>
     /// Constructor used by <see cref="ChunkManager"/> to build a proper <see cref="CellObserver"/>
     /// </summary>
-    internal CellObserver(Chunk chunk, Vector2I localCoord, Vector2I globalCoord)
+    internal CellObserver(Chunk chunk, Vec2I localCoord, Vec2I globalCoord)
     {
         _chunk = chunk;
         _coord = globalCoord;
 
         if (!chunk.IsAirAt(localCoord))
         {
-            _machine = chunk.GetMachineAt(localCoord);
+            _machine = chunk.GetMachineAt(localCoord)!;
             _machine.MachineRemoved += OnMachineRemoved;
             return;
         }
