@@ -5,13 +5,17 @@
 [ext_resource type="Script" uid="uid://4g7oljh36q7m" path="res://Scripts/World/ChunkManagerView.cs" id="5_rgj8m"]
 [ext_resource type="Script" path="res://Scripts/InputHandler.cs" id="6_input"]
 [ext_resource type="Script" path="res://Scripts/Gizmo.cs" id="7_gizmo"]
+[ext_resource type="Script" path="res://Scripts/Gui/Hud.cs" id="8_hud"]
+[ext_resource type="Script" path="res://Scripts/Gui/PlacementGhost.cs" id="9_ghost"]
 
-[node name="GameScene" type="Node" unique_id=1901527789 node_paths=PackedStringArray("ChunkManagerView", "Camera", "InputHandler", "Gizmo")]
+[node name="GameScene" type="Node" unique_id=1901527789 node_paths=PackedStringArray("ChunkManagerView", "Camera", "InputHandler", "Gizmo", "Hud", "PlacementGhost")]
 script = ExtResource("1_6h5vk")
 ChunkManagerView = NodePath("ChunkManagerView")
 Camera = NodePath("MainCamera")
 InputHandler = NodePath("InputHandler")
 Gizmo = NodePath("Gizmo")
+Hud = NodePath("Hud")
+PlacementGhost = NodePath("PlacementGhost")
 
 [node name="ChunkManagerView" type="Node" parent="." unique_id=389811636]
 script = ExtResource("5_rgj8m")
@@ -27,3 +31,9 @@ Camera = NodePath("../MainCamera")
 script = ExtResource("7_gizmo")
 Camera = NodePath("../MainCamera")
 InputHandler = NodePath("../InputHandler")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+script = ExtResource("8_hud")
+
+[node name="PlacementGhost" type="Sprite2D" parent="."]
+script = ExtResource("9_ghost")

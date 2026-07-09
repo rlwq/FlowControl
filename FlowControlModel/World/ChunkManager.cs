@@ -208,6 +208,9 @@ public class ChunkManager(WorldGrid grid, IWorldGenerator generator) : IChunkMan
     /// <summary> Returns the Machine occupying the specified global position, or <c>null</c> if it is empty. </summary>
     public IMachine? GetMachineAt(Vec2I coord) => GetMachineInstAt(coord);
 
+    /// <summary> Returns the concrete machine with the specified ID, or <c>null</c> if it does not exist. </summary>
+    internal Machine? FindMachineInstById(uint id) => _machinesById.GetValueOrDefault(id);
+
     /// <summary> Same as <see cref="GetMachineAt"/>, but returns the concrete <see cref="Machine"/>. </summary>
     internal Machine? GetMachineInstAt(Vec2I coord)
     {

@@ -34,6 +34,12 @@ public interface IMachine
 
     /// <summary> Coordinate of the machine's end point (Coord + Dimensions). </summary>
     Vec2I End { get; }
+
+    /// <summary>
+    /// A short human-readable description of the logic's current state
+    /// (for inspection windows), or <c>null</c> for stateless logics.
+    /// </summary>
+    string? LogicState { get; }
 }
 
 /// <summary>
@@ -87,6 +93,12 @@ internal class Machine : IMachine, IDisposable
 
     /// <summary> Calculated coordinate of the machine's end point (Coord + Dimensions). </summary>
     public Vec2I End => Coord + Dimensions;
+
+    /// <summary>
+    /// A short human-readable description of the logic's current state
+    /// (for inspection windows), or <c>null</c> for stateless logics.
+    /// </summary>
+    public string? LogicState => _logic.DisplayState;
 
     /// <summary> Executes one quant of its internal logic. </summary>
     public void Tick() => _logic.Tick(this);

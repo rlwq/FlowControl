@@ -22,6 +22,12 @@ public interface IEntity
 
     /// <summary> Entity's inventory. Empty for entity kinds registered without one. </summary>
     Inventory Inventory { get; }
+
+    /// <summary>
+    /// The cursor slot: an item stack held "in hand" (Factorio-style). Buildings are placed
+    /// from it, and it carries items between inventories. Empty for non-player entities.
+    /// </summary>
+    ItemStack HandStack { get; }
 }
 
 /// <summary>
@@ -43,6 +49,9 @@ internal class Entity(uint id, EntityLite lite, Vec2 coord, EntityLogic? logic) 
 
     /// <summary> Entity's inventory. Empty for entity kinds registered without one. </summary>
     public Inventory Inventory { get; } = new(lite.InventoryDimensions);
+
+    /// <summary> The cursor slot (see <see cref="IEntity.HandStack"/>). Set exclusively by <c>WorldSim</c>. </summary>
+    public ItemStack HandStack { get; set; } = ItemStack.Empty;
 
     /// <summary> The autonomous behavior of the entity. <c>null</c> for controlled entities. </summary>
     public EntityLogic? Logic { get; } = logic;

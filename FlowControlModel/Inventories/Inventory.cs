@@ -26,6 +26,17 @@ public readonly struct InventoryDimensions(int input, int blob, int output)
 }
 
 
+/// <summary> Names one of the three sections of an <see cref="Inventory"/>. </summary>
+public enum InventorySection
+{
+    /// <summary> The section items are inserted into first. </summary>
+    Input,
+    /// <summary> The general-purpose section. </summary>
+    Blob,
+    /// <summary> The section items are extracted from first. </summary>
+    Output,
+}
+
 /// <summary>
 /// A collection of slots where items can be stored.
 /// It consists of three sections: <c>input</c>, <c>blob</c>, and <c>output</c>. When inserting, items first
@@ -147,6 +158,34 @@ public class Inventory
         return item;
     }
     
+    /// <summary> Whether the section contains a slot with this index. </summary>
+    public bool IsValidSlot(InventorySection section, int slotIndex) =>
+        slotIndex >= 0 && slotIndex < SectionSlots(section).Length;
+
+    /// <summary> Returns the stack in the specified slot. </summary>
+    internal ItemStack GetSlot(InventorySection section, int slotIndex) =>
+        SectionSlots(section)[slotIndex];
+
+    /// <summary> Replaces the stack in the specified slot. </summary>
+    internal void SetSlot(InventorySection section, int slotIndex, ItemStack stack) =>
+        SectionSlots(section)[slotIndex] = stack;
+
+    private ItemStack[] SectionSlots(InventorySection section) => section switch
+    {
+        InventorySection.Input => _input,
+        InventorySection.Output => _output,
+        _ => _blob,
+    };
+
+    /// <summary> Read-only view of the input section's slots (including empty ones). </summary>
+    public IReadOnlyList<ItemStack> InputSlots => _input;
+
+    /// <summary> Read-only view of the blob section's slots (including empty ones). </summary>
+    public IReadOnlyList<ItemStack> BlobSlots => _blob;
+
+    /// <summary> Read-only view of the output section's slots (including empty ones). </summary>
+    public IReadOnlyList<ItemStack> OutputSlots => _output;
+
     /// <summary> Enumerates all non-empty stacks across the input, blob and output sections. </summary>
     public IEnumerable<ItemStack> EnumerateStacks()
     {

@@ -7,6 +7,9 @@ public class Oven : MachineLogic
 {
     private float _fuel = 10;
 
+    /// <inheritdoc/>
+    public override string? DisplayState => $"Fuel: {_fuel:0.0}";
+
     /// <summary> Executes one quant of the logic. </summary>
     public override void Tick(IMachine machineInst)
     {

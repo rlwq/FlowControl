@@ -38,9 +38,15 @@ public partial class ResourceRegistry
     /// <summary> Returns the atlas coordinates for a specific ground type. </summary>
     public Vector2I GetGroundTileLite(string kind) => _groundTilesAtlasCords[kind];
 
+    /// <summary> Returns the texture of a machine kind (e.g. for hotbar icons). </summary>
+    public Texture2D GetMachineTexture(string kind) => _machineTextures[kind];
+
+    /// <summary> Returns the texture of an item kind, or <c>null</c> when none is registered. </summary>
+    public Texture2D? FindItemTexture(string kind) => _itemTextures.GetValueOrDefault(kind);
+
     /// <summary>
-    /// Constructs and configures a <see cref="World.MachineView"/> in a way to achieve the 2.5D effect.
-    /// The view is positioned in global pixel coordinates.
+    /// Configures a sprite to display a machine of the given kind over the specified
+    /// footprint, achieving the 2.5D effect. Positions in global pixel coordinates.
     /// </summary>
     /// <remarks>
     /// The sprite is uniformly scaled so its width matches the machine's unrotated footprint;
@@ -48,29 +54,39 @@ public partial class ResourceRegistry
     /// around the footprint's center along with the machine, so the footprint always
     /// covers the machine's actual (rotated) cells.
     /// </remarks>
+    public void ApplyMachineSprite(Sprite2D sprite, string kind, Vec2I unrotatedDims, Vec2I coord, Rotation rotation)
+    {
+        var texture = _machineTextures[kind];
+        float texW = texture.GetWidth(), texH = texture.GetHeight();
+        var scale = unrotatedDims.X * _cellSize / texW;
+        // Texture rows covering the footprint itself (the rest is the 2.5D overhang)
+        var footprintTexH = texW * unrotatedDims.Y / unrotatedDims.X;
+        var rect = new RectI(coord, RotationM.RotateDims(unrotatedDims, rotation));
+
+        sprite.Texture = texture;
+        sprite.Position = rect.GetCenter().ToGodot() * _cellSize;
+        // Anchor the sprite by the center of its footprint block, so rotation
+        // spins the footprint in place
+        sprite.Offset = new Vector2(-texW / 2, footprintTexH / 2 - texH);
+        sprite.Rotation = (int)rotation * Mathf.Pi / 2;
+        sprite.Scale = new Vector2(scale, scale);
+        sprite.Centered = false;
+    }
+
+    /// <summary>
+    /// Constructs and configures a <see cref="World.MachineView"/> (see
+    /// <see cref="ApplyMachineSprite"/> for the positioning rules).
+    /// </summary>
     public World.MachineView BuildMachineView(IMachine machineInst)
     {
-        var texture = _machineTextures[machineInst.Lite.Kind];
-        float texW = texture.GetWidth(), texH = texture.GetHeight();
-        var dims = machineInst.Lite.Dimensions;
-        var scale = dims.X * _cellSize / texW;
-        // Texture rows covering the footprint itself (the rest is the 2.5D overhang)
-        var footprintTexH = texW * dims.Y / dims.X;
-
         var machineView = new World.MachineView
         {
-            Position = machineInst.Rect.GetCenter().ToGodot() * _cellSize,
-            // Anchor the sprite by the center of its footprint block, so rotation
-            // spins the footprint in place
-            Offset = new Vector2(-texW / 2, footprintTexH / 2 - texH),
-            Rotation = (int)machineInst.Rotation * Mathf.Pi / 2,
-            Scale = new Vector2(scale, scale),
-
-            Texture = texture,
-            Centered = false,
             YSortEnabled = true,
             ZIndex = 2,
         };
+        ApplyMachineSprite(
+            machineView, machineInst.Lite.Kind, machineInst.Lite.Dimensions,
+            machineInst.Coord, machineInst.Rotation);
 
         return machineView;
     }

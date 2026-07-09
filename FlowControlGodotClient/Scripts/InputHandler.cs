@@ -1,3 +1,4 @@
+using FlowControlGodotClient.Gui;
 using FlowControlModel;
 using Godot;
 
@@ -6,8 +7,11 @@ namespace FlowControlGodotClient;
 /// <summary>
 /// Reads user input and translates it into <see cref="WorldSimCommand"/>s.
 /// All keys are bound through <c>InputMap</c> actions (see <c>project.godot</c>), so they
-/// are rebindable and gamepad-friendly: movement (<c>move_*</c>), machine placement/removal
-/// (mouse), building rotation (<c>rotate_building</c>), item pick-up (<c>pick_up</c>).
+/// are rebindable and gamepad-friendly: movement (<c>move_*</c>), building rotation
+/// (<c>rotate_building</c>), item pick-up (<c>pick_up</c>).
+/// Placement works Factorio-style: a building item is taken from the inventory into the
+/// hand (<see cref="Hud.HandKind"/>), previewed by the <see cref="PlacementGhost"/> and
+/// placed with the left mouse button; clicking a machine with an empty hand inspects it.
 /// Also drives the camera: follow-the-player or free-cam (<c>free_camera</c>),
 /// smooth zoom towards the mouse cursor (wheel).
 /// </summary>
@@ -35,6 +39,8 @@ public partial class InputHandler : Node
     public Camera2D Camera = null!;
 
     private WorldSim _world = null!;
+    private Hud _hud = null!;
+    private PlacementGhost _ghost = null!;
     private uint _playerId;
     private int _cellSize;
     private float _targetZoom = 1f;
@@ -47,11 +53,13 @@ public partial class InputHandler : Node
     public bool IsFreeCamera => _freeCamera;
 
     /// <summary> Initializes the handler with the simulation and the player it controls. </summary>
-    public void Setup(WorldSim world, uint playerId, int cellSize)
+    public void Setup(WorldSim world, uint playerId, int cellSize, Hud hud, PlacementGhost ghost)
     {
         _world = world;
         _playerId = playerId;
         _cellSize = cellSize;
+        _hud = hud;
+        _ghost = ghost;
 
         Camera.Position = PlayerPixelPosition();
     }
@@ -87,6 +95,8 @@ public partial class InputHandler : Node
         }
 
         ProcessZoom();
+
+        _ghost.Preview(_hud.HandBuildingKind, MouseTileCoord(), PlaceRotation);
     }
 
     /// <summary>
@@ -131,16 +141,30 @@ public partial class InputHandler : Node
             case MouseButton.WheelUp:
                 _targetZoom = Mathf.Clamp(_targetZoom * ZoomStep, MinZoom, MaxZoom);
                 break;
+            case MouseButton.Left when _hud.HandBuildingKind is { } buildingKind:
+                _world.ReceiveCommand(
+                    new PlaceMachineAt(buildingKind, MouseTileCoord(), PlaceRotation, _playerId));
+                break;
             case MouseButton.Left:
-                _world.ReceiveCommand(new PlaceMachineAt("chest", MouseTileCoord(), PlaceRotation, _playerId));
+                InspectMachineUnderCursor();
+                break;
+            case MouseButton.Right when !_hud.HandStack.IsEmpty:
+                _hud.ReturnHand();
                 break;
             case MouseButton.Right:
-                _world.ReceiveCommand(new PlaceMachineAt("manipulator", MouseTileCoord(), PlaceRotation, _playerId));
+                InspectMachineUnderCursor();
                 break;
             case MouseButton.Middle:
                 _world.ReceiveCommand(new RemoveMachineAt(MouseTileCoord(), _playerId));
                 break;
         }
+    }
+
+    /// <summary> Opens the inspection window for the machine under the cursor, if any. </summary>
+    private void InspectMachineUnderCursor()
+    {
+        if (_world.ChunkManager.GetMachineAt(MouseTileCoord()) is { } machine)
+            _hud.MachineWindow.Open(machine);
     }
 
     /// <summary> The controlled player's position in world (cell) coordinates. </summary>

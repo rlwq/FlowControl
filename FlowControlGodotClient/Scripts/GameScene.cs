@@ -38,7 +38,19 @@ public partial class GameScene : Node
     public Gizmo Gizmo = null!;
 
     [Export]
+    public Gui.Hud Hud = null!;
+
+    [Export]
+    public Gui.PlacementGhost PlacementGhost = null!;
+
+    [Export]
     public int WorldSeed = 20260708;
+
+    /// <summary> Whether the simulation is paused (rendering and camera keep working). </summary>
+    public bool Paused { get; set; }
+
+    /// <summary> Simulation speed factor applied to <see cref="TickRate"/>. </summary>
+    public float SpeedMultiplier { get; set; } = 1f;
 
     private WorldGrid _grid = null!;
     private ResourceRegistry _resourceRegistry = null!;
@@ -110,11 +122,26 @@ public partial class GameScene : Node
         var playerId = addPlayer.EntityId!.Value;
         StockPlayer(playerId);
 
-        InputHandler.Setup(_world, playerId, _resourceRegistry.CellSize);
+        Hud.Setup(_world, registry, _resourceRegistry, this, playerId);
+        PlacementGhost.Setup(_world, registry, _resourceRegistry, playerId);
+        InputHandler.Setup(_world, playerId, _resourceRegistry.CellSize, Hud, PlacementGhost);
         Gizmo.Setup(_world, playerId, _resourceRegistry.CellSize);
 
         // The camera starts at the player; load the surrounding chunks right away
         CameraMoved();
+
+        if (OS.GetEnvironment("FC_GUI_SMOKE") == "1")
+        {
+            _world.Tick(); // deliver the starting kit before taking an item in hand
+            // Take the chest stack (inventory slot 0) into the hand through the command queue
+            _world.ReceiveCommand(new ExchangeSlotWithHand(
+                playerId, FlowControlModel.Inventories.InventorySection.Blob, 0));
+            _world.Tick();
+            Input.WarpMouse(GetViewport().GetVisibleRect().Size / 2 + new Vector2(120, 60));
+            Hud.ToggleInventory();
+            if (_world.ChunkManager.GetMachineAt(new Vec2I(2, 3)) is { } demoChest)
+                Hud.MachineWindow.Open(demoChest);
+        }
     }
 
     /// <summary>
@@ -162,7 +189,12 @@ public partial class GameScene : Node
         base._Process(delta);
 
         _clock += delta;
-        var tickPeriod = 1.0 / TickRate;
+        if (Paused)
+        {
+            _lastTick = _clock; // no catch-up burst on unpause
+            return;
+        }
+        var tickPeriod = 1.0 / (TickRate * SpeedMultiplier);
 
         // Fixed-timestep catch-up loop: run every tick the wall clock owes us,
         // up to MaxTicksPerFrame per frame

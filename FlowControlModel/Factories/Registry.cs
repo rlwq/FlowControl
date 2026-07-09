@@ -29,6 +29,9 @@ public partial class Registry
     /// <summary> Retrieves a <see cref="MachineLite"/> by its <paramref name="kind"/> name. </summary>
     public MachineLite GetMachineLite(string kind) => _machineLites[kind];
 
+    /// <summary> Whether a machine type with this <paramref name="kind"/> name is registered. </summary>
+    public bool HasMachineKind(string kind) => _machineLites.ContainsKey(kind);
+
     /// <summary>
     /// Retrieves a <see cref="MachineLogic"/> prototype. It must be copied and not used directly.
     /// </summary>

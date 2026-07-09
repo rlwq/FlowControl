@@ -29,6 +29,12 @@ public class Manipulator : MachineInteractiveLogic
     private int _motionTicks = HalfRotationTime;
 
     /// <inheritdoc/>
+    public override string? DisplayState =>
+        _motionTicks < HalfRotationTime
+            ? $"{_state} ({_motionTicks}/{HalfRotationTime})"
+            : $"{_state} (waiting)";
+
+    /// <inheritdoc/>
     public override void LinkObservers(IList<CellObserver> observers)
     {
         Debug.Assert(observers is { Count: 2 });

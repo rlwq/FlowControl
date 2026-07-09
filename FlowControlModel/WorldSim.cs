@@ -274,6 +274,67 @@ public class WorldSim
         }
     }
 
+    /// <summary>
+    /// Factorio-style slot click: exchanges items between the actor's hand (cursor slot)
+    /// and one inventory slot. An empty hand takes the whole stack; a held stack goes into
+    /// an empty slot, merges into a same-kind stack (up to its stack size), or swaps with
+    /// a different-kind stack. Targets the machine's inventory when
+    /// <paramref name="machineId"/> is provided (must be within reach), the actor's own otherwise.
+    /// </summary>
+    internal void ExchangeWithHand(uint actorId, InventorySection section, int slotIndex, uint? machineId = null)
+    {
+        var actor = _chunkManager.FindEntityInstById(actorId);
+        if (actor == null)
+            return;
+
+        Inventory inventory;
+        if (machineId != null)
+        {
+            var machine = _chunkManager.FindMachineInstById(machineId.Value);
+            if (machine == null || !ActorCanReach(actorId, machine.Rect))
+                return;
+            inventory = machine.Inventory;
+        }
+        else
+        {
+            inventory = actor.Inventory;
+        }
+
+        if (!inventory.IsValidSlot(section, slotIndex))
+            return;
+
+        var hand = actor.HandStack;
+        var slot = inventory.GetSlot(section, slotIndex);
+
+        if (hand.IsEmpty || slot.IsEmpty || !hand.Lite.Equals(slot.Lite))
+        {
+            // Take, put down or swap
+            inventory.SetSlot(section, slotIndex, hand);
+            actor.HandStack = slot;
+            return;
+        }
+
+        // Same kind: merge the hand into the slot, up to the stack size
+        var moved = System.Math.Min(hand.Count, slot.Lite.StackSize - slot.Count);
+        slot.Count += moved;
+        hand.Count -= moved;
+        inventory.SetSlot(section, slotIndex, slot);
+        actor.HandStack = hand;
+    }
+
+    /// <summary>
+    /// Returns the actor's hand stack into its own inventory.
+    /// Whatever does not fit stays in the hand.
+    /// </summary>
+    internal void ReturnHandToInventory(uint actorId)
+    {
+        var actor = _chunkManager.FindEntityInstById(actorId);
+        if (actor == null || actor.HandStack.IsEmpty)
+            return;
+
+        actor.HandStack = actor.Inventory.InsertItem(actor.HandStack);
+    }
+
     /// <summary> Places an item stack on the ground. </summary>
     private void DropStack(ItemStack stack, Vec2 coord)
     {
@@ -282,7 +343,8 @@ public class WorldSim
     }
 
     /// <summary>
-    /// Removes one item of the specified kind from the actor's inventory.
+    /// Removes one item of the specified kind from the actor — from the hand stack
+    /// when it holds that kind (the usual building flow), from the inventory otherwise.
     /// Returns whether the actor actually had one.
     /// </summary>
     private bool TryConsumeItem(uint actorId, string itemKind)
@@ -290,6 +352,14 @@ public class WorldSim
         var actor = _chunkManager.FindEntityInstById(actorId);
         if (actor == null)
             return false;
+
+        var hand = actor.HandStack;
+        if (!hand.IsEmpty && hand.Lite.Kind == itemKind)
+        {
+            hand.Count--;
+            actor.HandStack = hand;
+            return true;
+        }
 
         var extracted = actor.Inventory.ExtractItem(new ItemStack(1, _registry.GetItemLite(itemKind)));
         return !extracted.IsEmpty;
@@ -420,4 +490,25 @@ public class PickUpItemAt(Vec2 coord, uint actorId) : WorldSimCommand
 {
     /// <summary> Picks up nearby ground items; whatever does not fit stays. </summary>
     public override void Execute(WorldSim sim) => sim.PickUpItems(coord, actorId);
+}
+
+/// <summary>
+/// A transactional command implementing a Factorio-style slot click: exchanges items
+/// between the actor's hand (cursor slot) and one inventory slot — of the machine with
+/// <paramref name="machineId"/>, or of the actor itself when it is omitted.
+/// </summary>
+public class ExchangeSlotWithHand(
+    uint actorId, InventorySection section, int slotIndex, uint? machineId = null) : WorldSimCommand
+{
+    /// <summary> Takes, puts down, merges or swaps the stacks (see <c>WorldSim.ExchangeWithHand</c>). </summary>
+    public override void Execute(WorldSim sim) => sim.ExchangeWithHand(actorId, section, slotIndex, machineId);
+}
+
+/// <summary>
+/// A transactional command which returns the actor's hand stack into its own inventory.
+/// </summary>
+public class ReturnHand(uint actorId) : WorldSimCommand
+{
+    /// <summary> Empties the hand into the inventory; whatever does not fit stays in hand. </summary>
+    public override void Execute(WorldSim sim) => sim.ReturnHandToInventory(actorId);
 }
