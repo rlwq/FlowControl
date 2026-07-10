@@ -17,27 +17,27 @@ internal class GameObjectFactory(Registry registry, ChunkManager chunkManager)
     private uint _availableGroundItemId = 0;
 
     /// <summary>
-    /// Instantiates a new <see cref="Machine"/> of the specified <paramref name="kind"/> at a world position.
-    /// If the logic is interactive, creates observers for the cells it interacts with,
-    /// rotating the registered offsets along with the machine.
+    /// Instantiates a new <see cref="Machine"/> of the specified <paramref name="kind"/> at a world position,
+    /// wiring up its <see cref="BuildingApi"/> with ports over the registered observer offsets
+    /// (rotated along with the machine).
     /// </summary>
     public Machine CreateMachine(string kind, Vec2I globalCoord, Rotation rotation)
     {
         var lite = registry.GetMachineLite(kind);
         var logic = registry.GetMachineLogic(kind).Copy();
 
-        if (registry.IsMachineInteractive(kind))
-        {
-            var observers = registry
+        var observers = registry.IsMachineInteractive(kind)
+            ? registry
                 .GetMachineObserverOffsets(kind)
                 .Select(offset => chunkManager.CreateCellObserver(
                     globalCoord + RotationM.RotateOffset(offset, lite.Dimensions, rotation)))
-                .ToList();
+                .ToArray()
+            : [];
 
-            ((MachineInteractiveLogic) logic).LinkObservers(observers);
-        }
-
-        return new Machine(_availableMachineId++, globalCoord, rotation, lite, logic);
+        var api = new BuildingApi(registry, chunkManager, this, observers);
+        var machine = new Machine(_availableMachineId++, globalCoord, rotation, lite, logic, api);
+        api.Bind(machine);
+        return machine;
     }
 
     /// <summary>

@@ -5,8 +5,10 @@ namespace FlowControlModel.World;
 
 /// <summary>
 /// Observes one specific cell in the world and provides reference to the machine occupying it.
+/// Hidden inside the model: logics interact with observed cells through
+/// <see cref="Machines.IBuildingPort"/>s of the building API.
 /// </summary>
-public sealed class CellObserver : IDisposable
+internal sealed class CellObserver : IDisposable
 {
     private readonly Vec2I _coord;
     private readonly Chunk _chunk;

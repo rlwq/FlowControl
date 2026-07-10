@@ -1,16 +1,13 @@
-using System.Collections.Generic;
-using System.Diagnostics;
 using FlowControlModel.Machines;
-using FlowControlModel.World;
 
 namespace FlowControlBusiness.Machines;
 
 /// <summary>
-/// A one-cell arm which carries items from the machine under its input observer
-/// to the machine under its output observer, one item per full swing.
+/// A one-cell arm which carries items from the machine under its input port (0)
+/// to the machine under its output port (1), one item per full swing.
 /// Each half rotation (to the target and back) takes <see cref="HalfRotationTime"/> ticks.
 /// </summary>
-public class Manipulator : MachineInteractiveLogic
+public class Manipulator : MachineLogic
 {
     /// <summary> Which half of the swing cycle the arm is in. </summary>
     public enum State
@@ -22,9 +19,9 @@ public class Manipulator : MachineInteractiveLogic
     }
 
     private const int HalfRotationTime = 10;
+    private const int InputPort = 0;
+    private const int OutputPort = 1;
 
-    private CellObserver _input = null!;
-    private CellObserver _output = null!;
     private State _state = State.Fetching;
     private int _motionTicks = HalfRotationTime;
 
@@ -34,17 +31,8 @@ public class Manipulator : MachineInteractiveLogic
             ? $"{_state} ({_motionTicks}/{HalfRotationTime})"
             : $"{_state} (waiting)";
 
-    /// <inheritdoc/>
-    public override void LinkObservers(IList<CellObserver> observers)
-    {
-        Debug.Assert(observers is { Count: 2 });
-        RegisterObservers(observers);
-        _input = observers[0];
-        _output = observers[1];
-    }
-
     /// <summary> Executes one quant of the logic: swings the arm or moves one item. </summary>
-    public override void Tick(IMachine machineInst)
+    public override void Tick(IBuildingApi building)
     {
         // The arm is still swinging towards its target cell
         if (_motionTicks < HalfRotationTime) {
@@ -53,30 +41,23 @@ public class Manipulator : MachineInteractiveLogic
         }
 
         if (_state == State.Fetching) {
-            if (_input.IsEmpty) return;
-            var item = _input.Machine!.Inventory.Extract(1);
-            if (item.IsEmpty) return; // the source machine has nothing to give
-            machineInst.Inventory.InsertItem(item);
+            if (building.Port(InputPort).Pull(1) == 0) return; // nothing to grab yet
             _state = State.Delivering;
             _motionTicks = 0;
             return;
         }
 
         // Delivering: the arm has arrived at the output cell with an item in hand
-        if (_output.IsEmpty) return;
-        var held = machineInst.Inventory.Extract(1);
-        if (held.IsEmpty) { // nothing to deliver: swing back empty-handed
+        if (building.Port(OutputPort).Push(1) == 1) {
             _state = State.Fetching;
             _motionTicks = 0;
             return;
         }
-        var leftover = _output.Machine!.Inventory.InsertItem(held);
-        if (!leftover.IsEmpty) { // the target is full: keep holding the item
-            machineInst.Inventory.InsertItem(leftover);
-            return;
+        if (building.CountItems() == 0) { // the hand was emptied externally: swing back
+            _state = State.Fetching;
+            _motionTicks = 0;
         }
-        _state = State.Fetching;
-        _motionTicks = 0;
+        // Otherwise the target is missing or full: keep holding the item
     }
 
     /// <inheritdoc/>

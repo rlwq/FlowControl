@@ -49,15 +49,17 @@ public interface IMachine
 internal class Machine : IMachine, IDisposable
 {
     private readonly MachineLogic _logic;
+    private readonly BuildingApi _api;
 
     /// <summary>
     /// An active machine in the game world.
     /// A composition of some intrinsic, extrinsic properties, logic and inventory.
     /// </summary>
-    public Machine(uint id, Vec2I coord, Rotation rotation, MachineLite lite, MachineLogic logic)
+    public Machine(uint id, Vec2I coord, Rotation rotation, MachineLite lite, MachineLogic logic, BuildingApi api)
     {
         Id = id;
         _logic = logic;
+        _api = api;
         Lite = lite;
         Inventory = new Inventory(Lite.InventoryDimensions);
         Coord = coord;
@@ -100,8 +102,8 @@ internal class Machine : IMachine, IDisposable
     /// </summary>
     public string? LogicState => _logic.DisplayState;
 
-    /// <summary> Executes one quant of its internal logic. </summary>
-    public void Tick() => _logic.Tick(this);
+    /// <summary> Executes one quant of its internal logic, acting through the building API. </summary>
+    public void Tick() => _logic.Tick(_api);
 
     /// <summary>
     /// Used by <see cref="ChunkManager"/> to invoke <see cref="MachineRemoved"/> when removed.
@@ -112,6 +114,7 @@ internal class Machine : IMachine, IDisposable
     public void Dispose()
     {
         _logic.Dispose();
+        _api.Dispose();
         GC.SuppressFinalize(this);
     }
 }

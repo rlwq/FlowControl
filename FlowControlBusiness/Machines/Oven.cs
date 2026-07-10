@@ -11,7 +11,7 @@ public class Oven : MachineLogic
     public override string? DisplayState => $"Fuel: {_fuel:0.0}";
 
     /// <summary> Executes one quant of the logic. </summary>
-    public override void Tick(IMachine machineInst)
+    public override void Tick(IBuildingApi building)
     {
         if (_fuel > 0)
             _fuel -= 0.1f;

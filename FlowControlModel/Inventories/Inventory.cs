@@ -186,6 +186,19 @@ public class Inventory
     /// <summary> Read-only view of the output section's slots (including empty ones). </summary>
     public IReadOnlyList<ItemStack> OutputSlots => _output;
 
+    /// <summary>
+    /// Counts items across all sections: of one kind, or of any kind when
+    /// <paramref name="itemKind"/> is <c>null</c>.
+    /// </summary>
+    public int CountItems(string? itemKind = null)
+    {
+        var total = 0;
+        foreach (var stack in EnumerateStacks())
+            if (itemKind == null || stack.Lite.Kind == itemKind)
+                total += stack.Count;
+        return total;
+    }
+
     /// <summary> Enumerates all non-empty stacks across the input, blob and output sections. </summary>
     public IEnumerable<ItemStack> EnumerateStacks()
     {
