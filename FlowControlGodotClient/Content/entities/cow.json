@@ -1,0 +1,5 @@
+{
+  "boxSize": [1, 1],
+  "logic": "wanderer",
+  "logicParams": { "speed": 0.06 }
+}

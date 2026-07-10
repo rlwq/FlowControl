@@ -1,0 +1,5 @@
+{
+  "dimensions": [2, 1],
+  "inventory": [0, 8, 0],
+  "logic": "dumb"
+}

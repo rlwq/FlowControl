@@ -1,0 +1,60 @@
+{
+  "cellSize": 32,
+
+  "grounds": [
+	{ "kind": "stone", "atlas": [0, 0] },
+	{ "kind": "grass", "atlas": [1, 0] },
+	{ "kind": "iron_deposit", "atlas": [2, 0], "spawnsItem": "iron_ore", "spawnPeriodTicks": 300 }
+  ],
+
+  "items": [
+	{ "kind": "iron_bar", "stackSize": 16, "texture": "res://Sprites/Items/iron_bar.png" },
+	{ "kind": "iron_ore", "stackSize": 32, "texture": "res://Sprites/Items/iron_ore.png" },
+	{ "kind": "chest", "stackSize": 8 },
+	{ "kind": "manipulator", "stackSize": 8 },
+	{ "kind": "oven", "stackSize": 8 },
+	{ "kind": "door", "stackSize": 8 }
+  ],
+
+  "machines": [
+	{
+	  "kind": "chest",
+	  "dimensions": [2, 1],
+	  "inventory": [0, 8, 0],
+	  "logic": "dumb",
+	  "texture": "res://Sprites/Machines/chest.png"
+	},
+	{
+	  "kind": "manipulator",
+	  "dimensions": [1, 1],
+	  "inventory": [0, 1, 0],
+	  "logic": "manipulator",
+	  "observerOffsets": [[-1, 0], [0, 1]],
+	  "texture": "res://Sprites/Machines/manipulator.png"
+	},
+	{
+	  "kind": "oven",
+	  "dimensions": [2, 2],
+	  "inventory": [1, 2, 1],
+	  "logic": "oven",
+	  "texture": "res://Sprites/Machines/oven.png"
+	},
+	{
+	  "kind": "door",
+	  "dimensions": [1, 1],
+	  "logic": "dumb",
+	  "texture": "res://Sprites/Machines/door.png"
+	}
+  ],
+
+  "entities": [
+	{ "kind": "player", "texture": "res://Sprites/Entities/player.png" },
+	{
+	  "kind": "cow",
+	  "boxSize": [1, 1],
+	  "logic": "wanderer",
+	  "logicParams": { "speed": 0.06 },
+	  "texture": "res://Sprites/Entities/cow.png"
+	}
+  ]
+}

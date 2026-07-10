@@ -1,10 +1,8 @@
+using System.Collections.Generic;
 using FlowControlModel;
-using FlowControlBusiness.Entities;
-using FlowControlBusiness.Machines;
+using FlowControlBusiness.Content;
 using FlowControlBusiness.WorldGeneration;
 using FlowControlGodotClient.ResourceRegistries;
-using FlowControlModel.Factories;
-using FlowControlModel.Inventories;
 using FlowControlModel.World;
 using Godot;
 
@@ -56,58 +54,27 @@ public partial class GameScene : Node
     private ResourceRegistry _resourceRegistry = null!;
     private WorldSim _world = null!;
 
+    /// <summary> Root of the core content tree: one JSON file per kind, named by the kind. </summary>
+    private const string ContentDir = "res://Content";
+
+    /// <summary> Root of the visuals tree, mirroring <see cref="ContentDir"/>'s structure. </summary>
+    private const string VisualsDir = "res://Visuals";
+
     public override void _Ready()
     {
         _grid = new WorldGrid(20);
 
-        var regBuilder = new Registry.RegistryBuilder();
-        regBuilder
-            .RegisterItem("iron_bar", 16)
-            .RegisterItem("iron_ore", 32)
-            .RegisterItem("chest", 8)
-            .RegisterItem("manipulator", 8)
-            .RegisterItem("oven", 8)
-            .RegisterItem("door", 8)
-            .RegisterGround("stone")
-            .RegisterGround("grass")
-            .RegisterGround("iron_deposit", spawnsItemKind: "iron_ore", spawnPeriodTicks: 300)
-            .RegisterMachine("chest", new Vec2I(2, 1), new InventoryDimensions(0, 8, 0))
-            .RegisterMachine("manipulator", new Vec2I(1, 1), new InventoryDimensions(0, 1, 0))
-            .RegisterMachine("oven", new Vec2I(2, 2), new InventoryDimensions(1, 2, 1))
-            .RegisterMachine("door", new Vec2I(1, 1))
-            .RegisterEntity("cow", new Vec2(1, 1))
-            .RegisterEntityLogic("cow", new Wanderer(0.06f))
-            .RegisterMachineLogic("chest", new Dumb())
-            .RegisterMachineLogic("door", new Dumb())
-            .RegisterMachineLogic("oven", new Oven())
-            .RegisterMachineLogic("manipulator", new Manipulator(), [new Vec2I(-1, 0), new Vec2I(0, 1)]);
-        var registry = regBuilder.Build();
+        // All game content comes from per-kind JSON files (the file name is the kind):
+        // Content/ holds core data only, Visuals/ holds textures and atlas coordinates.
+        // Mods are just extra files dropped into these trees.
+        var loader = new ContentLoader(LogicCatalog.Standard());
+        LoadKindFiles($"{ContentDir}/grounds", loader.AddGround);
+        LoadKindFiles($"{ContentDir}/items", loader.AddItem);
+        LoadKindFiles($"{ContentDir}/machines", loader.AddMachine);
+        LoadKindFiles($"{ContentDir}/entities", loader.AddEntity);
 
-        var chestTexture = GD.Load<Texture2D>("res://Sprites/Machines/chest.png");
-        var manipulatorTexture = GD.Load<Texture2D>("res://Sprites/Machines/manipulator.png");
-        var ovenTexture = GD.Load<Texture2D>("res://Sprites/Machines/oven.png");
-        var doorTexture = GD.Load<Texture2D>("res://Sprites/Machines/door.png");
-
-        var resRegBuilder = new ResourceRegistry.ResourceRegistryBuilder(_grid);
-        resRegBuilder
-            .SetCellSize(32)
-            .RegisterGroundTile("stone", new Vector2I(0, 0))
-            .RegisterGroundTile("grass", new Vector2I(1, 0))
-            .RegisterGroundTile("iron_deposit", new Vector2I(2, 0))
-            .RegisterMachineTexture("chest", chestTexture)
-            .RegisterMachineTexture("manipulator", manipulatorTexture)
-            .RegisterMachineTexture("oven", ovenTexture)
-            .RegisterMachineTexture("door", doorTexture)
-            .RegisterEntityTexture("cow", GD.Load<Texture2D>("res://Sprites/Entities/cow.png"))
-            .RegisterEntityTexture("player", GD.Load<Texture2D>("res://Sprites/Entities/player.png"))
-            .RegisterItemTexture("iron_bar", GD.Load<Texture2D>("res://Sprites/Items/iron_bar.png"))
-            .RegisterItemTexture("iron_ore", GD.Load<Texture2D>("res://Sprites/Items/iron_ore.png"))
-            // Dropped machines reuse their machine textures as item sprites
-            .RegisterItemTexture("chest", chestTexture)
-            .RegisterItemTexture("manipulator", manipulatorTexture)
-            .RegisterItemTexture("oven", ovenTexture)
-            .RegisterItemTexture("door", doorTexture);
-        _resourceRegistry = resRegBuilder.Build();
+        var registry = loader.BuildRegistry();
+        _resourceRegistry = ManifestVisualLoader.Build(_grid, loader, VisualsDir);
 
         var generator = new NoiseWorldGenerator(registry, WorldSeed);
         _world = new WorldSim(registry, _grid, generator);
@@ -174,6 +141,22 @@ public partial class GameScene : Node
         // A few items lying on the ground to pick up
         _world.ReceiveCommand(new DropItemAt("iron_bar", 3, new Vec2(5.4f, 6.6f)));
         _world.ReceiveCommand(new DropItemAt("iron_ore", 2, new Vec2(9.6f, 6.4f)));
+    }
+
+    /// <summary>
+    /// Feeds every <c>*.json</c> file of one content category into the loader:
+    /// the file name (without extension) is the kind.
+    /// </summary>
+    private static void LoadKindFiles(string dirPath, System.Func<string, string, ContentLoader> add)
+    {
+        using var dir = DirAccess.Open(dirPath)
+            ?? throw new ContentException($"Content directory '{dirPath}' is missing.");
+
+        var files = new List<string>(dir.GetFiles());
+        files.Sort(string.CompareOrdinal);
+        foreach (var file in files)
+            if (file.EndsWith(".json"))
+                add(file[..^".json".Length], FileAccess.GetFileAsString($"{dirPath}/{file}"));
     }
 
     /// <summary> Gives the freshly spawned player their starting kit. </summary>
