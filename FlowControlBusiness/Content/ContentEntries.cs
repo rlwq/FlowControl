@@ -39,6 +39,12 @@ public static class ContentEntries
 
         /// <summary> Ticks between two spawns of one tile (with <see cref="SpawnsItem"/>). </summary>
         public int SpawnPeriodTicks { get; set; }
+
+        /// <summary> Whether entities can walk on (and machines stand on) this ground. </summary>
+        public bool Passable { get; set; } = true;
+
+        /// <summary> Movement speed multiplier for entities standing on this ground. </summary>
+        public float SpeedModifier { get; set; } = 1f;
     }
 
     /// <summary> An item kind: <c>Content/items/&lt;kind&gt;.json</c>. </summary>

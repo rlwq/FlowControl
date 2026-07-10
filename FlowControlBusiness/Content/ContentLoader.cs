@@ -62,7 +62,9 @@ public sealed class ContentLoader(LogicCatalog catalog)
             builder.RegisterItem(kind, item.StackSize);
 
         foreach (var (kind, ground) in _grounds)
-            builder.RegisterGround(kind, ground.SpawnsItem, ground.SpawnPeriodTicks);
+            builder.RegisterGround(
+                kind, ground.SpawnsItem, ground.SpawnPeriodTicks,
+                ground.Passable, ground.SpeedModifier);
 
         foreach (var (kind, machine) in _machines)
         {

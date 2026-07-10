@@ -139,13 +139,19 @@ public class ChunkManager(WorldGrid grid, IWorldGenerator generator) : IChunkMan
         return true;
     }
 
-    /// <summary> Whether every cell overlapped by the box is free of machines. </summary>
+    /// <summary>
+    /// Whether every cell overlapped by the box is free of machines and stands
+    /// on passable ground (water and the like block movement and placement).
+    /// </summary>
     private bool AreCellsFree(Rect box)
     {
         for (var i = MathM.FloorToInt(box.Position.Y); i < box.End.Y; i++)
         for (var j = MathM.FloorToInt(box.Position.X); j < box.End.X; j++)
-            if (!IsCellEmpty(new Vec2I(j, i)))
+        {
+            var cell = new Vec2I(j, i);
+            if (!IsCellEmpty(cell) || !GetGroundLiteAt(cell).Passable)
                 return false;
+        }
         return true;
     }
 

@@ -94,7 +94,9 @@ public partial class Registry
         /// <paramref name="spawnPeriodTicks"/> ticks (e.g. ore deposits). The item kind is
         /// resolved when <see cref="Build"/> is called, so it may be registered later.
         /// </summary>
-        public RegistryBuilder RegisterGround(string kind, string? spawnsItemKind = null, int spawnPeriodTicks = 0)
+        public RegistryBuilder RegisterGround(
+            string kind, string? spawnsItemKind = null, int spawnPeriodTicks = 0,
+            bool passable = true, float speedModifier = 1f)
         {
             if (Registry._groundLites.ContainsKey(kind))
                 throw new ArgumentException($"Ground '{kind}' is already registered.", nameof(kind));
@@ -102,8 +104,11 @@ public partial class Registry
                 throw new ArgumentException(
                     $"Ground '{kind}' spawns '{spawnsItemKind}' but its spawn period is not positive.",
                     nameof(spawnPeriodTicks));
+            if (speedModifier <= 0)
+                throw new ArgumentException(
+                    $"Ground '{kind}' has a non-positive speed modifier.", nameof(speedModifier));
 
-            Registry._groundLites.Add(kind, new GroundLite(kind));
+            Registry._groundLites.Add(kind, new GroundLite(kind, passable, speedModifier));
             if (spawnsItemKind != null)
                 _pendingSpawners.Add(kind, (spawnsItemKind, spawnPeriodTicks));
             return this;

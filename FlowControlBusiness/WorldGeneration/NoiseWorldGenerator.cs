@@ -5,10 +5,11 @@ using FlowControlModel.World;
 namespace FlowControlBusiness.WorldGeneration;
 
 /// <summary>
-/// Deterministic value-noise ground generator: smooth stone patches on grass,
-/// with rare iron deposit veins from a second, independent noise channel.
+/// Deterministic value-noise ground generator: lakes and smooth stone patches on grass,
+/// with rare iron deposit veins — each from its own independent noise channel.
 /// The same seed and coordinate always produce the same ground kind.
-/// Requires the <c>"stone"</c>, <c>"grass"</c> and <c>"iron_deposit"</c> grounds to be registered.
+/// Requires the <c>"water"</c>, <c>"stone"</c>, <c>"grass"</c> and <c>"iron_deposit"</c>
+/// grounds to be registered.
 /// </summary>
 public class NoiseWorldGenerator(Registry registry, int seed = 0) : IWorldGenerator
 {
@@ -27,6 +28,16 @@ public class NoiseWorldGenerator(Registry registry, int seed = 0) : IWorldGenera
     /// <summary> Seed salt separating the deposit channel from the stone channel. </summary>
     private const int DepositChannel = 0x5EED;
 
+    /// <summary> Frequency of the water channel: low, so lakes come out large. </summary>
+    private const float WaterFrequency = 0.06f;
+
+    /// <summary> Water noise values below this threshold become lakes. </summary>
+    private const float WaterThreshold = 0.17f;
+
+    /// <summary> Seed salt separating the water channel from the other channels. </summary>
+    private const int WaterChannel = 0x7A7E2;
+
+    private readonly GroundLite _water = registry.GetGroundLite("water");
     private readonly GroundLite _stone = registry.GetGroundLite("stone");
     private readonly GroundLite _grass = registry.GetGroundLite("grass");
     private readonly GroundLite _ironDeposit = registry.GetGroundLite("iron_deposit");
@@ -34,6 +45,10 @@ public class NoiseWorldGenerator(Registry registry, int seed = 0) : IWorldGenera
     /// <summary> Returns the ground kind at the specified global cell. </summary>
     public GroundLite GetGroundAt(Vec2I coord)
     {
+        if (ValueNoise(coord.X * WaterFrequency, coord.Y * WaterFrequency, seed ^ WaterChannel)
+            < WaterThreshold)
+            return _water;
+
         if (ValueNoise(coord.X * DepositFrequency, coord.Y * DepositFrequency, seed ^ DepositChannel)
             > DepositThreshold)
             return _ironDeposit;

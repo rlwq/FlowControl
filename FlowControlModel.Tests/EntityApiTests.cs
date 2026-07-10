@@ -31,6 +31,7 @@ public class EntityApiTests
         new Registry.RegistryBuilder()
             .RegisterGround("stone")
             .RegisterGround("grass")
+            .RegisterGround("water", passable: false)
             .RegisterGround("iron_deposit", spawnsItemKind: "iron_ore", spawnPeriodTicks: 50)
             .RegisterItem("iron_bar", 16)
             .RegisterItem("iron_ore", 32)

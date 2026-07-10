@@ -198,6 +198,9 @@ public class WorldSim
         if (entity == null)
             return;
 
+        // The ground underfoot scales the step (stone paths are faster than grass)
+        delta *= _chunkManager.GetGroundLiteAt(entity.Coord.FloorToI()).SpeedModifier;
+
         var target = entity.Coord + delta;
         if (!CanStandAt(entity, target))
         {

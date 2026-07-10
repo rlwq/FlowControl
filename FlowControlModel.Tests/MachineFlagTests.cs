@@ -14,6 +14,7 @@ public class MachineFlagTests
             .RegisterEntity("player", new Vec2(0.75f, 0.75f), new InventoryDimensions(0, 16, 0))
             .RegisterGround("stone")
             .RegisterGround("grass")
+            .RegisterGround("water", passable: false)
             .RegisterGround("iron_deposit", spawnsItemKind: "iron_ore", spawnPeriodTicks: 50)
             .RegisterItem("iron_bar", 16)
             .RegisterItem("iron_ore", 32)
