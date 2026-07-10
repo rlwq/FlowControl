@@ -129,10 +129,20 @@ public class Inventory
     }
 
     /// <summary>
+    /// Optional predicate limiting what <see cref="InsertItem"/> accepts (e.g. a recipe
+    /// machine accepting only its ingredients). Rejected stacks return whole to the caller.
+    /// Direct slot manipulation (the player's hand) is not affected: the owner is sovereign.
+    /// </summary>
+    public Predicate<ItemLite>? InsertFilter { get; set; }
+
+    /// <summary>
     /// Inserts a bunch of items. Returns items that could not be inserted.
     /// </summary>
     public ItemStack InsertItem(ItemStack item)
     {
+        if (item.IsEmpty || InsertFilter != null && !InsertFilter(item.Lite))
+            return item;
+
         item = InsertItemToSlots(_input, item);
         item = InsertItemToSlots(_blob, item);
         return item;

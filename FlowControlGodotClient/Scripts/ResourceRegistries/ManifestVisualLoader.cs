@@ -70,16 +70,14 @@ public static class ManifestVisualLoader
             builder.RegisterItemTexture(kind, texture);
         }
 
-        // Entities: the built-in "player" needs a visual too
-        var entityKinds = new HashSet<string>(content.EntityKinds) { "player" };
         var seenEntities = new HashSet<string>();
-        foreach (var (kind, json) in ReadKindFiles($"{visualsDir}/entities", entityKinds))
+        foreach (var (kind, json) in ReadKindFiles($"{visualsDir}/entities", content.EntityKinds))
         {
             seenEntities.Add(kind);
             builder.RegisterEntityTexture(
                 kind, LoadTexture(Parse<TextureEntry>(json, kind).Texture, "entity", kind));
         }
-        foreach (var kind in entityKinds)
+        foreach (var kind in content.EntityKinds)
             if (!seenEntities.Contains(kind))
                 throw new ContentException($"Entity '{kind}' has no visual file (Visuals/entities/{kind}.json).");
 

@@ -77,7 +77,7 @@ public partial class GameScene : Node
         _resourceRegistry = ManifestVisualLoader.Build(_grid, loader, VisualsDir);
 
         var generator = new NoiseWorldGenerator(registry, WorldSeed);
-        _world = new WorldSim(registry, _grid, generator);
+        _world = new WorldSim(registry, _grid, generator, WorldSeed);
 
         ChunkManagerView.Setup(_world.ChunkManager, _resourceRegistry);
 

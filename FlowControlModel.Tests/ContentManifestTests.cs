@@ -101,10 +101,27 @@ public class ContentManifestTests
     }
 
     [Fact]
-    public void PlayerContentFile_IsRejected()
+    public void NonBuildableMachine_NeedsNoItemPair()
     {
-        var loader = new ContentLoader(LogicCatalog.Standard());
-        Assert.Throws<ContentException>(() => loader.AddEntity("player", "{}"));
+        var registry = new ContentLoader(LogicCatalog.Standard())
+            .AddMachine("hub", """{ "dimensions": [2, 2], "playerBuildable": false, "indestructible": true }""")
+            .BuildRegistry();
+
+        var lite = registry.GetMachineLite("hub");
+        Assert.False(lite.PlayerBuildable);
+        Assert.True(lite.Indestructible);
+    }
+
+    [Fact]
+    public void Player_IsOrdinaryContent()
+    {
+        var registry = new ContentLoader(LogicCatalog.Standard())
+            .AddEntity("player", """{ "boxSize": [0.75, 0.75], "inventory": [0, 16, 0] }""")
+            .BuildRegistry();
+
+        var lite = registry.GetEntityLite("player");
+        Assert.Equal(new Vec2(0.75f, 0.75f), lite.BoxSize);
+        Assert.Equal(16, lite.InventoryDimensions.Blob);
     }
 
     [Fact]

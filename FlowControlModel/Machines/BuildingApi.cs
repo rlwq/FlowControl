@@ -139,36 +139,17 @@ internal sealed class BuildingApi : IBuildingApi, IDisposable
     public int PickUpItems(float radius, string? itemKind = null)
     {
         radius = Math.Clamp(radius, 0, IBuildingApi.MaxRange);
-        var center = _machine.Rect.GetCenter();
-
-        var collected = 0;
-        foreach (var item in _chunkManager.FindGroundItemsNear(center, radius))
-        {
-            if (itemKind != null && item.Stack.Lite.Kind != itemKind)
-                continue;
-
-            var leftover = _machine.Inventory.InsertItem(item.Stack);
-            collected += item.Stack.Count - leftover.Count;
-            _chunkManager.RemoveGroundItem(item);
-            if (!leftover.IsEmpty)
-                _chunkManager.PlaceGroundItem(_factory.CreateGroundItem(leftover, item.Coord));
-        }
-        return collected;
+        return ItemFlow.PickUp(
+            _chunkManager, _factory, _machine.Inventory, _machine.Rect.GetCenter(), radius, itemKind);
     }
 
     /// <inheritdoc/>
     public int DropItems(string itemKind, int count, Vec2 offset)
     {
         RequireInRange(offset.DistanceTo(Vec2.Zero), "drop point");
-
-        var stack = _machine.Inventory.ExtractItem(
-            new ItemStack(count, _registry.GetItemLite(itemKind)));
-        if (stack.IsEmpty)
-            return 0;
-
-        _chunkManager.PlaceGroundItem(
-            _factory.CreateGroundItem(stack, _machine.Rect.GetCenter() + offset));
-        return stack.Count;
+        return ItemFlow.Drop(
+            _chunkManager, _factory, _machine.Inventory,
+            _registry.GetItemLite(itemKind), count, _machine.Rect.GetCenter() + offset);
     }
 
     /// <inheritdoc/>
@@ -214,33 +195,18 @@ internal sealed class BuildingApi : IBuildingApi, IDisposable
         /// <inheritdoc/>
         public int Pull(int count, string? itemKind = null) =>
             observer.Machine is { } neighbor
-                ? MoveItems(neighbor.Inventory, owner._machine.Inventory, count, itemKind)
+                ? ItemFlow.Move(neighbor.Inventory, owner._machine.Inventory, count, LiteOf(itemKind))
                 : 0;
 
         /// <inheritdoc/>
         public int Push(int count, string? itemKind = null) =>
             observer.Machine is { } neighbor
-                ? MoveItems(owner._machine.Inventory, neighbor.Inventory, count, itemKind)
+                ? ItemFlow.Move(owner._machine.Inventory, neighbor.Inventory, count, LiteOf(itemKind))
                 : 0;
 
         public void Dispose() => observer.Dispose();
 
-        /// <summary>
-        /// Moves items between two inventories through extraction and insertion;
-        /// whatever the target rejects goes back to the source. Never conjures items.
-        /// </summary>
-        private int MoveItems(Inventory from, Inventory to, int count, string? itemKind)
-        {
-            var stack = itemKind == null
-                ? from.Extract(count)
-                : from.ExtractItem(new ItemStack(count, owner._registry.GetItemLite(itemKind)));
-            if (stack.IsEmpty)
-                return 0;
-
-            var leftover = to.InsertItem(stack);
-            if (!leftover.IsEmpty)
-                from.InsertItem(leftover);
-            return stack.Count - leftover.Count;
-        }
+        private ItemLite? LiteOf(string? itemKind) =>
+            itemKind == null ? null : owner._registry.GetItemLite(itemKind);
     }
 }

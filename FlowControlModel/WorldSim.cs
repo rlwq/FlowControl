@@ -23,25 +23,38 @@ public class WorldSim
     private readonly GameObjectFactory _gameObjectFactory;
 
     private readonly Queue<WorldSimCommand> _commandQueue = [];
+    private readonly List<IWorldSystem> _systems = [];
+    private readonly WorldContext _context;
 
     private ulong _tickCount;
 
     /// <summary> The logical state of the world. </summary>
     public IChunkManager ChunkManager => _chunkManager;
 
+    /// <summary> The seed this world was created with. </summary>
+    public int Seed { get; }
+
     /// <summary> Creates a simulation over a fresh world produced by the specified generator. </summary>
     /// <param name="registry"> The catalog of all registered kinds. </param>
     /// <param name="grid"> Geometry of the world's chunk grid. </param>
     /// <param name="generator"> The ground generator used when chunks materialize. </param>
-    public WorldSim(Registry registry, WorldGrid grid, IWorldGenerator generator)
+    /// <param name="seed"> Seed for the simulation's deterministic gameplay randomness. </param>
+    public WorldSim(Registry registry, WorldGrid grid, IWorldGenerator generator, int seed = 0)
     {
         _registry = registry;
         _chunkManager = new ChunkManager(grid, generator);
         _gameObjectFactory = new GameObjectFactory(registry, _chunkManager);
+        Seed = seed;
+        _context = new WorldContext(this, new System.Random(seed));
     }
 
     /// <summary> Adds a new <see cref="WorldSimCommand"/> to the queue. </summary>
     public void ReceiveCommand(WorldSimCommand command) => _commandQueue.Enqueue(command);
+
+    /// <summary>
+    /// Plugs a simulation-wide system in; it is ticked every tick, in registration order.
+    /// </summary>
+    public void AddSystem(IWorldSystem system) => _systems.Add(system);
 
     /// <summary> Executes one tick of the simulation. </summary>
     public void Tick()
@@ -54,6 +67,9 @@ public class WorldSim
         TickEntities();
         TickGroundSpawners();
 
+        foreach (var system in _systems)
+            system.Tick(_context);
+
         _tickCount++;
     }
 
@@ -62,12 +78,23 @@ public class WorldSim
     {
         foreach (var entity in _chunkManager.GetEntitiesSnapshot())
         {
-            if (entity.Logic == null)
+            if (entity.Logic == null || entity.Api == null)
                 continue;
-            var delta = entity.Logic.Tick(entity);
+            entity.Logic.Tick(entity.Api);
+            var delta = entity.Api.ConsumeRequestedMove();
             if (delta != Vec2.Zero)
                 MoveEntityBy(entity.Id, delta);
         }
+    }
+
+    /// <summary> The capability surface handed to <see cref="IWorldSystem"/>s. </summary>
+    private sealed class WorldContext(WorldSim sim, System.Random random) : IWorldContext
+    {
+        public int Seed => sim.Seed;
+        public ulong TickCount => sim._tickCount;
+        public System.Random Random { get; } = random;
+        public IChunkManager ChunkManager => sim.ChunkManager;
+        public void Enqueue(WorldSimCommand command) => sim.ReceiveCommand(command);
     }
 
     /// <summary>
@@ -105,6 +132,8 @@ public class WorldSim
         var lite = _registry.GetMachineLite(kind);
         var rect = new RectI(coord, RotationM.RotateDims(lite.Dimensions, rotation));
 
+        if (actorId != null && !lite.PlayerBuildable)
+            return;
         if (!ActorCanReach(actorId, rect))
             return;
         if (!_chunkManager.IsBoxFree(rect))
@@ -127,6 +156,8 @@ public class WorldSim
         var machine = _chunkManager.GetMachineInstAt(coord);
         if (machine == null)
             return;
+        if (actorId != null && machine.Lite.Indestructible)
+            return;
         if (!ActorCanReach(actorId, machine.Rect))
             return;
 
@@ -134,7 +165,7 @@ public class WorldSim
         _chunkManager.RemoveMachine(machine);
 
         // The machine itself goes back to the remover (or on the ground if their bag is full)
-        if (actorId != null)
+        if (actorId != null && machine.Lite.PlayerBuildable)
         {
             var machineItem = new ItemStack(1, _registry.GetItemLite(machine.Lite.Kind));
             var actor = _chunkManager.FindEntityInstById(actorId.Value);

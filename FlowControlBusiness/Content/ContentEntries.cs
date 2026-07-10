@@ -65,11 +65,20 @@ public static class ContentEntries
 
         /// <summary> Cell offsets the logic observes, relative to the unrotated footprint. </summary>
         public int[][]? ObserverOffsets { get; set; }
+
+        /// <summary>
+        /// Whether players may build this machine. Non-buildable machines (e.g. the Hub)
+        /// need no item pair and are placed only by system commands.
+        /// </summary>
+        public bool PlayerBuildable { get; set; } = true;
+
+        /// <summary> Whether the machine resists removal by players (e.g. the Hub). </summary>
+        public bool Indestructible { get; set; }
     }
 
     /// <summary>
-    /// An entity kind: <c>Content/entities/&lt;kind&gt;.json</c>.
-    /// The kind <c>"player"</c> is built into the model and must not have a content file.
+    /// An entity kind: <c>Content/entities/&lt;kind&gt;.json</c>
+    /// (the player included — it is an ordinary entity without a logic).
     /// </summary>
     public sealed class Entity
     {

@@ -23,20 +23,16 @@ public partial class Registry
         private Registry Registry =>
             _registry ?? throw new InvalidOperationException("Registry is already built.");
 
-        /// <summary> Initializes a new builder and registers default types like <c>"air"</c> and <c>"player"</c>. </summary>
-        public RegistryBuilder()
-        {
-            RegisterEntity("player", new Vec2(0.75f, 0.75f), new InventoryDimensions(0, 16, 0));
-            RegisterMachine("air", new Vec2I(1, 1));
-        }
-
         /// <summary> Registers a new machine type in the registry. </summary>
-        public RegistryBuilder RegisterMachine(string kind, Vec2I dimensions, InventoryDimensions? invDims = null)
+        public RegistryBuilder RegisterMachine(
+            string kind, Vec2I dimensions, InventoryDimensions? invDims = null,
+            bool playerBuildable = true, bool indestructible = false)
         {
             if (Registry._machineLites.ContainsKey(kind))
                 throw new ArgumentException($"Machine '{kind}' is already registered.", nameof(kind));
 
-            Registry._machineLites.Add(kind, new MachineLite(kind, dimensions, invDims));
+            Registry._machineLites.Add(
+                kind, new MachineLite(kind, dimensions, invDims, playerBuildable, indestructible));
             return this;
         }
 

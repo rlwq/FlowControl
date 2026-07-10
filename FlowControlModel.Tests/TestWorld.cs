@@ -19,6 +19,7 @@ public static class TestWorld
     /// <summary> A registry with the standard demo kinds. </summary>
     public static Registry BuildRegistry() =>
         new Registry.RegistryBuilder()
+            .RegisterEntity("player", new Vec2(0.75f, 0.75f), new InventoryDimensions(0, 16, 0))
             .RegisterItem("iron_bar", 16)
             .RegisterItem("iron_ore", 16)
             .RegisterItem("chest", 8)

@@ -32,7 +32,7 @@ public sealed class ContentLoader(LogicCatalog catalog)
     /// <summary> All loaded machine kinds. </summary>
     public IReadOnlyCollection<string> MachineKinds => _machines.Keys;
 
-    /// <summary> All loaded entity kinds (the built-in <c>"player"</c> not included). </summary>
+    /// <summary> All loaded entity kinds. </summary>
     public IReadOnlyCollection<string> EntityKinds => _entities.Keys;
 
     /// <summary> Loads one ground kind from its file text. </summary>
@@ -47,18 +47,9 @@ public sealed class ContentLoader(LogicCatalog catalog)
     public ContentLoader AddMachine(string kind, string json) =>
         Store(_machines, kind, ContentEntries.Parse<ContentEntries.Machine>(json, kind));
 
-    /// <summary>
-    /// Loads one entity kind from its file text.
-    /// The kind <c>"player"</c> is built into the model and is rejected here.
-    /// </summary>
-    public ContentLoader AddEntity(string kind, string json)
-    {
-        if (kind == "player")
-            throw new ContentException(
-                "The 'player' entity is built into the model and must not have a content file "
-                + "(its texture goes to Visuals/entities/player.json).");
-        return Store(_entities, kind, ContentEntries.Parse<ContentEntries.Entity>(json, kind));
-    }
+    /// <summary> Loads one entity kind from its file text. </summary>
+    public ContentLoader AddEntity(string kind, string json) =>
+        Store(_entities, kind, ContentEntries.Parse<ContentEntries.Entity>(json, kind));
 
     /// <summary> Builds a <see cref="Registry"/> from every loaded entry. </summary>
     public Registry BuildRegistry()
@@ -78,7 +69,9 @@ public sealed class ContentLoader(LogicCatalog catalog)
             builder.RegisterMachine(
                 kind,
                 ToVec2I(machine.Dimensions, kind, "dimensions"),
-                ToInventoryDims(machine.Inventory, kind));
+                ToInventoryDims(machine.Inventory, kind),
+                machine.PlayerBuildable,
+                machine.Indestructible);
 
             if (machine.Logic == null)
             {
@@ -120,16 +113,17 @@ public sealed class ContentLoader(LogicCatalog catalog)
     }
 
     /// <summary>
-    /// Every machine kind must also exist as an item kind: buildings are placed
-    /// from the inventory, so a machine without an item could never be built.
+    /// Every player-buildable machine kind must also exist as an item kind: buildings are
+    /// placed from the inventory, so a machine without an item could never be built.
+    /// Non-buildable machines (e.g. the Hub) are exempt.
     /// </summary>
     private void ValidateMachineItems()
     {
-        foreach (var kind in _machines.Keys)
-            if (!_items.ContainsKey(kind))
+        foreach (var (kind, machine) in _machines)
+            if (machine.PlayerBuildable && !_items.ContainsKey(kind))
                 throw new ContentException(
                     $"Machine '{kind}' has no matching item: it could never be built. "
-                    + $"Add Content/items/{kind}.json.");
+                    + $"Add Content/items/{kind}.json or mark it \"playerBuildable\": false.");
     }
 
     private static Vec2I ToVec2I(int[]? pair, string kind, string field) =>

@@ -33,7 +33,8 @@ public interface IEntity
 /// <summary>
 /// An Entity instance which can be placed in the world or used as a prototype.
 /// </summary>
-internal class Entity(uint id, EntityLite lite, Vec2 coord, EntityLogic? logic) : IEntity, IDisposable
+internal class Entity(uint id, EntityLite lite, Vec2 coord, EntityLogic? logic, EntityApi? api)
+    : IEntity, IDisposable
 {
     /// <summary> Entity's unique identifier. </summary>
     public uint Id { get; } = id;
@@ -55,6 +56,9 @@ internal class Entity(uint id, EntityLite lite, Vec2 coord, EntityLogic? logic) 
 
     /// <summary> The autonomous behavior of the entity. <c>null</c> for controlled entities. </summary>
     public EntityLogic? Logic { get; } = logic;
+
+    /// <summary> The capability surface the logic acts through. <c>null</c> when there is no logic. </summary>
+    public EntityApi? Api { get; } = api;
 
     /// <summary> Prepares to be deleted. </summary>
     public void Dispose()

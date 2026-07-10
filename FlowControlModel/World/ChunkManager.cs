@@ -337,6 +337,37 @@ public class ChunkManager(WorldGrid grid, IWorldGenerator generator) : IChunkMan
         return result;
     }
 
+    /// <summary>
+    /// Returns all machines whose footprint lies within the specified radius of a point
+    /// (distance to the closest footprint cell), without duplicates.
+    /// </summary>
+    internal List<Machine> FindMachinesNear(Vec2 coord, float radius)
+    {
+        var result = new List<Machine>();
+        var seen = new HashSet<uint>();
+        var beginChunk = Grid.ToLocal(coord - new Vec2(radius, radius)).Chunk;
+        var endChunk = Grid.ToLocal(coord + new Vec2(radius, radius)).Chunk;
+        for (var i = beginChunk.Y; i <= endChunk.Y; i++)
+        for (var j = beginChunk.X; j <= endChunk.X; j++)
+        {
+            if (!_chunks.TryGetValue(new Vec2I(j, i), out var chunk))
+                continue;
+            foreach (var machine in chunk.GetMachines())
+                if (seen.Add(machine.Id) && DistanceToRect(machine.Rect, coord) <= radius)
+                    result.Add(machine);
+        }
+        return result;
+    }
+
+    /// <summary> Distance from a point to the closest point of a rectangle (0 inside). </summary>
+    private static float DistanceToRect(RectI rect, Vec2 point)
+    {
+        var closest = new Vec2(
+            System.Math.Clamp(point.X, rect.Position.X, rect.End.X),
+            System.Math.Clamp(point.Y, rect.Position.Y, rect.End.Y));
+        return closest.DistanceTo(point);
+    }
+
     /// <summary> Whether any ground item lies within the specified cell. </summary>
     internal bool HasGroundItemOnCell(Vec2I cell)
     {

@@ -42,13 +42,16 @@ internal class GameObjectFactory(Registry registry, ChunkManager chunkManager)
 
     /// <summary>
     /// Instantiates a new <see cref="Entity"/> of the specified <paramref name="kind"/> at a world position,
-    /// wiring up a copy of its logic prototype, if the kind has one.
+    /// wiring up a copy of its logic prototype and its <see cref="EntityApi"/>, if the kind has one.
     /// </summary>
     public Entity CreateEntity(string kind, Vec2 globalCoord)
     {
         var lite = registry.GetEntityLite(kind);
         var logic = registry.FindEntityLogic(kind)?.Copy();
-        return new Entity(_availableEntityId++, lite, globalCoord, logic);
+        var api = logic != null ? new EntityApi(registry, chunkManager, this) : null;
+        var entity = new Entity(_availableEntityId++, lite, globalCoord, logic, api);
+        api?.Bind(entity);
+        return entity;
     }
 
     /// <summary> Instantiates a new <see cref="GroundItem"/> holding the specified stack. </summary>
