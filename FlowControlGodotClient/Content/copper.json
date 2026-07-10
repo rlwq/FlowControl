@@ -1,6 +1,0 @@
-{
-  "items": [
-	{ "kind": "copper_ingot", "stackSize": 16, "texture": "res://Sprites/Items/copper_ingot.png" },
-	{ "kind": "copper_plate", "stackSize": 16, "texture": "res://Sprites/Items/copper_plate.png" }
-  ]
-}
