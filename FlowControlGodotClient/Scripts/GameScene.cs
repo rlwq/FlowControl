@@ -185,6 +185,7 @@ public partial class GameScene : Node
         while (_clock - _lastTick >= tickPeriod && ticks < MaxTicksPerFrame)
         {
             _lastTick += tickPeriod;
+            ChunkManagerView.CommitEntityMotion();
             InputHandler.ProcessTick();
             _world.Tick();
             ticks++;
@@ -193,6 +194,10 @@ public partial class GameScene : Node
         // Still behind after the cap: drop the backlog instead of spiraling
         if (_clock - _lastTick >= tickPeriod)
             _lastTick = _clock;
+
+        // Entities render between their last two tick positions (one tick behind)
+        ChunkManagerView.InterpolateEntities(
+            Mathf.Clamp((float)((_clock - _lastTick) / tickPeriod), 0f, 1f));
 
         if (ticks > 0)
             CameraMoved();

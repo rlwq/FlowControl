@@ -28,6 +28,7 @@ public partial class ChunkManagerView : Node
     private ResourceRegistry _resourceRegistry = null!;
     private readonly Dictionary<Vector2I, World.ChunkView> _chunkViews = [];
     private readonly Dictionary<uint, World.MachineView> _machineViews = [];
+    private readonly Dictionary<uint, World.EntityView> _entityViews = [];
 
     /// <summary> Initializes the view with logical managers and subscribes to world changes. </summary>
     public void Setup(IChunkManager chunkManager, ResourceRegistry resourceRegistry)
@@ -77,7 +78,7 @@ public partial class ChunkManagerView : Node
 
         // Initialize existing entities
         foreach (var entity in _chunkManager.GetEntitiesInChunk(chunkCoord.ToModel()))
-            chunkView.BuildEntityView(entity);
+            ShowEntityView(entity);
 
         // Initialize existing ground items
         foreach (var item in _chunkManager.GetGroundItemsInChunk(chunkCoord.ToModel()))
@@ -98,6 +99,29 @@ public partial class ChunkManagerView : Node
         foreach (var machine in _chunkManager.GetMachinesInChunk(chunkCoord.ToModel()))
             if (!OverlappedChunks(machine).Any(IsLoaded))
                 HideMachineView(machine);
+
+        foreach (var entity in _chunkManager.GetEntitiesInChunk(chunkCoord.ToModel()))
+            HideEntityView(entity);
+    }
+
+    /// <summary>
+    /// Fixes every entity sprite's interpolation origin.
+    /// Called right before each simulation tick.
+    /// </summary>
+    public void CommitEntityMotion()
+    {
+        foreach (var view in _entityViews.Values)
+            view.CommitTick();
+    }
+
+    /// <summary>
+    /// Renders entity sprites between their last two tick positions.
+    /// Called every frame with the fraction of the current tick that has elapsed.
+    /// </summary>
+    public void InterpolateEntities(float alpha)
+    {
+        foreach (var view in _entityViews.Values)
+            view.Interpolate(alpha);
     }
 
     /// <summary>
@@ -169,41 +193,51 @@ public partial class ChunkManagerView : Node
         HideMachineView(machineInst);
     }
 
+    /// <summary> Builds the entity's view (a direct child of this node), if it does not exist yet. </summary>
+    private void ShowEntityView(IEntity entity)
+    {
+        if (_entityViews.ContainsKey(entity.Id))
+            return;
+
+        var entityView = _resourceRegistry.BuildEntityView(entity);
+        AddChild(entityView);
+        _entityViews[entity.Id] = entityView;
+    }
+
+    /// <summary> Destroys the entity's view, if it exists. </summary>
+    private void HideEntityView(IEntity entity)
+    {
+        if (!_entityViews.TryGetValue(entity.Id, out var view))
+            return;
+
+        RemoveChild(view);
+        view.QueueFree();
+        _entityViews.Remove(entity.Id);
+    }
+
     private void OnEntityAdded(IEntity entity)
     {
-        var chunk = _chunkManager.Grid.ToLocal(entity.Coord).Chunk.ToGodot();
-        if (!IsLoaded(chunk))
-            return;
-        _chunkViews[chunk].BuildEntityView(entity);
+        if (IsLoaded(_chunkManager.Grid.ToLocal(entity.Coord).Chunk.ToGodot()))
+            ShowEntityView(entity);
     }
 
     private void OnEntityRemoved(IEntity entity)
     {
-        var chunk = _chunkManager.Grid.ToLocal(entity.Coord).Chunk.ToGodot();
-        if (!IsLoaded(chunk))
-            return;
-        _chunkViews[chunk].RemoveEntityView(entity);
+        HideEntityView(entity);
     }
 
     private void OnEntityMoved(IEntity entity, Vec2 from)
     {
-        var chunkFrom = _chunkManager.Grid.ToLocal(from).Chunk.ToGodot();
-        var chunkTo = _chunkManager.Grid.ToLocal(entity.Coord).Chunk.ToGodot();
-
-        if (!IsLoaded(chunkFrom) && !IsLoaded(chunkTo))
+        if (!IsLoaded(_chunkManager.Grid.ToLocal(entity.Coord).Chunk.ToGodot()))
+        {
+            HideEntityView(entity); // wandered into an invisible chunk
             return;
+        }
 
-        if (IsLoaded(chunkFrom) && !IsLoaded(chunkTo))
-            _chunkViews[chunkFrom].RemoveEntityView(entity);
-
-        if (!IsLoaded(chunkFrom) && IsLoaded(chunkTo))
-            _chunkViews[chunkTo].BuildEntityView(entity);
-
-        if (!IsLoaded(chunkFrom) || !IsLoaded(chunkTo)) return;
-
-        var entityView = _chunkViews[chunkFrom].ExtractEntityView(entity);
-        entityView.Position = _resourceRegistry.GetEntityViewPosition(entity);
-        _chunkViews[chunkTo].InsertEntityView(entity, entityView);
+        if (_entityViews.TryGetValue(entity.Id, out var view))
+            view.MoveTo(_resourceRegistry.GetEntityViewPosition(entity));
+        else
+            ShowEntityView(entity); // wandered in from an invisible chunk: appear in place
     }
 
     private void OnGroundItemPlaced(IGroundItem item)

@@ -92,13 +92,16 @@ public partial class ResourceRegistry
     }
 
     /// <summary>
-    /// Computes the in-chunk position of an entity's view: the bottom-center ("feet")
+    /// Computes the global pixel position of an entity's view: the bottom-center ("feet")
     /// of its collision box.
     /// </summary>
     public Vector2 GetEntityViewPosition(IEntity entity) =>
-        (_grid.ToLocal(entity.Coord).Cell + new Vec2(0, entity.Lite.BoxSize.Y / 2)).ToGodot() * _cellSize;
+        (entity.Coord + new Vec2(0, entity.Lite.BoxSize.Y / 2)).ToGodot() * _cellSize;
 
-    /// <summary> Constructs and configures a <see cref="World.EntityView"/>. </summary>
+    /// <summary>
+    /// Constructs and configures a <see cref="World.EntityView"/>,
+    /// positioned in global pixel coordinates.
+    /// </summary>
     /// <remarks>
     /// The sprite is uniformly scaled so its width matches the entity's collision box
     /// and anchored by its feet: the texture's bottom-center is placed at the bottom of
@@ -110,7 +113,6 @@ public partial class ResourceRegistry
         var scale = entity.Lite.BoxSize.X * _cellSize / texture.GetWidth();
         var entityView = new World.EntityView
         {
-            Position = GetEntityViewPosition(entity),
             Offset = new Vector2(-texture.GetWidth() / 2f, -texture.GetHeight()),
             Centered = false,
             Texture = texture,
@@ -118,6 +120,7 @@ public partial class ResourceRegistry
             ZIndex = 1,
             ZAsRelative = true,
         };
+        entityView.Snap(GetEntityViewPosition(entity));
         return entityView;
     }
 
