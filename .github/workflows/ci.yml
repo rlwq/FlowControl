@@ -1,8 +1,9 @@
-name: Publish API docs
+name: CI
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -15,7 +16,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Run model tests
+        run: dotnet test FlowControlModel.Tests/FlowControlModel.Tests.csproj --nologo
+
+  publish-docs:
+    # Docs go out only from main and only over green tests
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
