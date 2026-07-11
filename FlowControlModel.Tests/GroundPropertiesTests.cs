@@ -34,7 +34,7 @@ public class GroundPropertiesTests
 
         for (var i = 0; i < 100; i++)
         {
-            sim.ReceiveCommand(new EntityStepById(playerId, new Vec2(0.3f, 0)));
+            sim.ReceiveCommand(new CmdEntityStepById(playerId, new Vec2(0.3f, 0)));
             sim.Tick();
         }
 
@@ -46,8 +46,8 @@ public class GroundPropertiesTests
     public void Water_RejectsMachineAndEntityPlacement()
     {
         var sim = BuildSim();
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(11, 2)));
-        var cow = new PlaceEntityAt("cow", new Vec2(12.5f, 2.5f));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(11, 2)));
+        var cow = new CmdPlaceEntityAt("cow", new Vec2(12.5f, 2.5f));
         sim.ReceiveCommand(cow);
         sim.Tick();
 
@@ -60,7 +60,7 @@ public class GroundPropertiesTests
     {
         var sim = BuildSim();
         // A 2x1 chest at (9,2) covers (9,2) on grass and (10,2) on water
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(9, 2)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(9, 2)));
         sim.Tick();
 
         Assert.True(sim.ChunkManager.IsCellEmpty(new Vec2I(9, 2)));
@@ -73,8 +73,8 @@ public class GroundPropertiesTests
         var onGrass = TestWorld.SpawnPlayer(sim, new Vec2(2.5f, 2.5f));
         var onStone = TestWorld.SpawnPlayer(sim, new Vec2(2.5f, 5.5f));
 
-        sim.ReceiveCommand(new EntityStepById(onGrass, new Vec2(1f, 0)));
-        sim.ReceiveCommand(new EntityStepById(onStone, new Vec2(1f, 0)));
+        sim.ReceiveCommand(new CmdEntityStepById(onGrass, new Vec2(1f, 0)));
+        sim.ReceiveCommand(new CmdEntityStepById(onStone, new Vec2(1f, 0)));
         sim.Tick();
 
         Assert.Equal(3.5f, sim.ChunkManager.GetEntityById(onGrass).Coord.X, 3);

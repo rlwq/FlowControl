@@ -10,7 +10,7 @@ namespace FlowControlModel.Factories;
 /// Instantiates game objects from their registered types,
 /// assigning unique identifiers and wiring up machine logic.
 /// </summary>
-internal class GameObjectFactory(Registry registry, ChunkManager chunkManager)
+internal class GameObjectFactory(Registry registry, ChunkManager chunkManager, ElectricGrid electricGrid)
 {
     private uint _availableMachineId = 0;
     private uint _availableEntityId = 0;
@@ -34,7 +34,7 @@ internal class GameObjectFactory(Registry registry, ChunkManager chunkManager)
                 .ToArray()
             : [];
 
-        var api = new BuildingApi(registry, chunkManager, this, observers);
+        var api = new BuildingApi(registry, chunkManager, this, electricGrid, observers);
         var machine = new Machine(_availableMachineId++, globalCoord, rotation, lite, logic, api);
         api.Bind(machine);
         return machine;

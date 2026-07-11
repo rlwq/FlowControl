@@ -96,8 +96,11 @@ public partial class MachineWindow : PanelContainer
             return;
 
         _title.Text = $"{_machine.Lite.Kind} #{_machine.Id} ({_machine.Rotation})";
-        _state.Text = _machine.LogicState ?? "";
-        _state.Visible = _machine.LogicState != null;
+        var state = _machine.LogicState ?? "";
+        if (_machine.Lite.PowerDemand > 0)
+            state += $"{(state.Length > 0 ? "\n" : "")}Power: {_machine.PowerSatisfaction:P0}";
+        _state.Text = state;
+        _state.Visible = state.Length > 0;
     }
 
     /// <summary> Adds a labeled slot grid for one inventory section (skipped when empty). </summary>

@@ -221,6 +221,26 @@ public class Inventory
     }
 
     /// <summary>
+    /// Extracts items for the machine's own consumption: unlike <see cref="ExtractItem"/>,
+    /// the input section is reachable (that is where ingredients and fuel arrive).
+    /// Scans input, then blob, then output.
+    /// </summary>
+    internal ItemStack ExtractAsOwner(ItemStack item)
+    {
+        var total = 0;
+        foreach (var slots in new[] { _input, _blob, _output })
+        {
+            var extracted = ExtractItemFromSlots(slots, item);
+            item.Count -= extracted.Count;
+            total += extracted.Count;
+            if (item.IsEmpty)
+                break;
+        }
+        item.Count = total;
+        return item;
+    }
+
+    /// <summary>
     /// Extracts and returns a bunch of items of the same type, up to the requested amount (if possible).
     /// </summary>
     public ItemStack Extract(int count)

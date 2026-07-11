@@ -39,13 +39,19 @@ public class WorldSim
     /// <param name="grid"> Geometry of the world's chunk grid. </param>
     /// <param name="generator"> The ground generator used when chunks materialize. </param>
     /// <param name="seed"> Seed for the simulation's deterministic gameplay randomness. </param>
+    private readonly ElectricGrid _electricGrid;
+
     public WorldSim(Registry registry, WorldGrid grid, IWorldGenerator generator, int seed = 0)
     {
         _registry = registry;
         _chunkManager = new ChunkManager(grid, generator);
-        _gameObjectFactory = new GameObjectFactory(registry, _chunkManager);
+        _electricGrid = new ElectricGrid(_chunkManager);
+        _gameObjectFactory = new GameObjectFactory(registry, _chunkManager, _electricGrid);
         Seed = seed;
         _context = new WorldContext(this, new System.Random(seed));
+
+        _chunkManager.MachinePlaced += _ => _electricGrid.MarkDirty();
+        _chunkManager.MachineRemoved += _ => _electricGrid.MarkDirty();
     }
 
     /// <summary> Adds a new <see cref="WorldSimCommand"/> to the queue. </summary>
@@ -64,6 +70,7 @@ public class WorldSim
             _commandQueue.Dequeue().Execute(this);
 
         _chunkManager.Tick();
+        _electricGrid.Resolve();
         TickEntities();
         TickGroundSpawners();
 
@@ -431,7 +438,7 @@ public abstract class WorldSimCommand
 /// Pass <paramref name="actorId"/> to place on behalf of a player (reach is checked and
 /// one item of the machine's kind is consumed); omit it for system placements.
 /// </summary>
-public class PlaceMachineAt(string kind, Vec2I coord, Rotation rotation = Rotation.North, uint? actorId = null)
+public class CmdPlaceMachineAt(string kind, Vec2I coord, Rotation rotation = Rotation.North, uint? actorId = null)
     : WorldSimCommand
 {
     /// <summary> Places a new Machine in the world, if the region is free and reachable. </summary>
@@ -443,14 +450,14 @@ public class PlaceMachineAt(string kind, Vec2I coord, Rotation rotation = Rotati
 /// onto the ground. Pass <paramref name="actorId"/> to remove on behalf of a player
 /// (reach is checked and the machine item is returned); omit it for system removals.
 /// </summary>
-public class RemoveMachineAt(Vec2I coord, uint? actorId = null) : WorldSimCommand
+public class CmdRemoveMachineAt(Vec2I coord, uint? actorId = null) : WorldSimCommand
 {
     /// <summary> Removes a Machine from the world, if it exists and is reachable. </summary>
     public override void Execute(WorldSim sim) => sim.RemoveMachine(coord, actorId);
 }
 
 /// <summary> A transactional command which replaces a ground tile. </summary>
-public class SetGroundAt(string kind, Vec2I coord) : WorldSimCommand
+public class CmdSetGroundAt(string kind, Vec2I coord) : WorldSimCommand
 {
     /// <summary> Replaces the ground tile at the specified position. </summary>
     public override void Execute(WorldSim sim) => sim.SetGround(kind, coord);
@@ -460,7 +467,7 @@ public class SetGroundAt(string kind, Vec2I coord) : WorldSimCommand
 /// A transactional command which inserts items into the inventory of the machine
 /// at the specified position.
 /// </summary>
-public class InsertItemAt(string itemKind, int count, Vec2I coord) : WorldSimCommand
+public class CmdInsertItemAt(string itemKind, int count, Vec2I coord) : WorldSimCommand
 {
     /// <summary> Inserts the items, discarding whatever does not fit. </summary>
     public override void Execute(WorldSim sim) => sim.InsertItem(itemKind, count, coord);
@@ -470,7 +477,7 @@ public class InsertItemAt(string itemKind, int count, Vec2I coord) : WorldSimCom
 /// A transactional command which inserts items into the inventory of the entity
 /// with the specified id (e.g. starting equipment for a player).
 /// </summary>
-public class GiveItemsTo(uint entityId, string itemKind, int count) : WorldSimCommand
+public class CmdGiveItemsTo(uint entityId, string itemKind, int count) : WorldSimCommand
 {
     /// <summary> Inserts the items, discarding whatever does not fit. </summary>
     public override void Execute(WorldSim sim) => sim.GiveItems(entityId, itemKind, count);
@@ -481,7 +488,7 @@ public class GiveItemsTo(uint entityId, string itemKind, int count) : WorldSimCo
 /// After execution, <see cref="EntityId"/> holds the new entity's id
 /// (or <c>null</c> if the placement was rejected).
 /// </summary>
-public class PlaceEntityAt(string kind, Vec2 coord) : WorldSimCommand
+public class CmdPlaceEntityAt(string kind, Vec2 coord) : WorldSimCommand
 {
     /// <summary> The id of the placed entity. <c>null</c> before execution or when rejected. </summary>
     public uint? EntityId { get; private set; }
@@ -491,7 +498,7 @@ public class PlaceEntityAt(string kind, Vec2 coord) : WorldSimCommand
 }
 
 /// <summary> A transactional command which removes an entity from the world. </summary>
-public class RemoveEntityById(uint entityId) : WorldSimCommand
+public class CmdRemoveEntityById(uint entityId) : WorldSimCommand
 {
     /// <summary> Removes the entity, if it exists. </summary>
     public override void Execute(WorldSim sim) => sim.RemoveEntity(entityId);
@@ -500,7 +507,7 @@ public class RemoveEntityById(uint entityId) : WorldSimCommand
 /// <summary>
 /// A transactional command which moves an entity by a relative offset, respecting collisions.
 /// </summary>
-public class EntityStepById(uint entityId, Vec2 delta) : WorldSimCommand
+public class CmdEntityStepById(uint entityId, Vec2 delta) : WorldSimCommand
 {
     /// <summary> Moves the entity by the offset (or slides along a free axis). </summary>
     public override void Execute(WorldSim sim) => sim.MoveEntityBy(entityId, delta);
@@ -510,7 +517,7 @@ public class EntityStepById(uint entityId, Vec2 delta) : WorldSimCommand
 /// A transactional command which drops items on the ground. Pass <paramref name="actorId"/>
 /// to drop from a player's inventory (reach is checked); omit it for system drops.
 /// </summary>
-public class DropItemAt(string itemKind, int count, Vec2 coord, uint? actorId = null) : WorldSimCommand
+public class CmdDropItemAt(string itemKind, int count, Vec2 coord, uint? actorId = null) : WorldSimCommand
 {
     /// <summary> Drops the items on the ground. </summary>
     public override void Execute(WorldSim sim) => sim.DropItem(itemKind, count, coord, actorId);
@@ -520,7 +527,7 @@ public class DropItemAt(string itemKind, int count, Vec2 coord, uint? actorId = 
 /// A transactional command which picks up ground items around a point
 /// into the actor's inventory.
 /// </summary>
-public class PickUpItemAt(Vec2 coord, uint actorId) : WorldSimCommand
+public class CmdPickUpItemAt(Vec2 coord, uint actorId) : WorldSimCommand
 {
     /// <summary> Picks up nearby ground items; whatever does not fit stays. </summary>
     public override void Execute(WorldSim sim) => sim.PickUpItems(coord, actorId);
@@ -531,7 +538,7 @@ public class PickUpItemAt(Vec2 coord, uint actorId) : WorldSimCommand
 /// between the actor's hand (cursor slot) and one inventory slot — of the machine with
 /// <paramref name="machineId"/>, or of the actor itself when it is omitted.
 /// </summary>
-public class ExchangeSlotWithHand(
+public class CmdExchangeSlotWithHand(
     uint actorId, InventorySection section, int slotIndex, uint? machineId = null) : WorldSimCommand
 {
     /// <summary> Takes, puts down, merges or swaps the stacks (see <c>WorldSim.ExchangeWithHand</c>). </summary>
@@ -541,7 +548,7 @@ public class ExchangeSlotWithHand(
 /// <summary>
 /// A transactional command which returns the actor's hand stack into its own inventory.
 /// </summary>
-public class ReturnHand(uint actorId) : WorldSimCommand
+public class CmdReturnHand(uint actorId) : WorldSimCommand
 {
     /// <summary> Empties the hand into the inventory; whatever does not fit stays in hand. </summary>
     public override void Execute(WorldSim sim) => sim.ReturnHandToInventory(actorId);

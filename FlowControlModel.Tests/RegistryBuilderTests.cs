@@ -12,12 +12,12 @@ public class RegistryBuilderTests
     {
         var builder = new Registry.RegistryBuilder()
             .RegisterMachine("chest", new Vec2I(2, 1))
-            .RegisterItem("iron_bar", 16)
+            .RegisterItem("iron_ingot", 16)
             .RegisterGround("grass")
             .RegisterEntity("cow", new Vec2(1, 1));
 
         Assert.Throws<ArgumentException>(() => builder.RegisterMachine("chest", new Vec2I(1, 1)));
-        Assert.Throws<ArgumentException>(() => builder.RegisterItem("iron_bar", 8));
+        Assert.Throws<ArgumentException>(() => builder.RegisterItem("iron_ingot", 8));
         Assert.Throws<ArgumentException>(() => builder.RegisterGround("grass"));
         Assert.Throws<ArgumentException>(() => builder.RegisterEntity("cow", new Vec2(1, 1)));
     }

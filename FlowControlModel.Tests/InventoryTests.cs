@@ -6,7 +6,7 @@ namespace FlowControlModel.Tests;
 
 public class InventoryTests
 {
-    private static readonly ItemLite Iron = new("iron_bar", 16);
+    private static readonly ItemLite Iron = new("iron_ingot", 16);
 
     [Fact]
     public void InsertItem_ReturnsLeftoverWhenFull()

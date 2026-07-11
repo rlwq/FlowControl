@@ -80,6 +80,8 @@ public partial class Gizmo : CanvasLayer
         if (_world.ChunkManager.GetMachineAt(tile) is { } machine)
         {
             sb.AppendLine($"Machine: {machine.Lite.Kind} #{machine.Id} ({machine.Rotation})");
+            if (machine.Lite.PowerDemand > 0)
+                sb.AppendLine($"  Power: {machine.PowerSatisfaction:P0}");
             foreach (var stack in machine.Inventory.EnumerateStacks())
                 sb.AppendLine($"  {stack.Lite.Kind} x{stack.Count}");
         }

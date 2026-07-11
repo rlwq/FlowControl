@@ -40,6 +40,12 @@ public interface IMachine
     /// (for inspection windows), or <c>null</c> for stateless logics.
     /// </summary>
     string? LogicState { get; }
+
+    /// <summary>
+    /// The share (0..1) of the demanded electric power this machine received last tick.
+    /// Always 1 for machine kinds without a power demand.
+    /// </summary>
+    float PowerSatisfaction { get; }
 }
 
 /// <summary>
@@ -64,6 +70,7 @@ internal class Machine : IMachine, IDisposable
         Inventory = new Inventory(Lite.InventoryDimensions);
         Coord = coord;
         Rotation = rotation;
+        PowerSatisfaction = lite.PowerDemand > 0 ? 0f : 1f;
     }
 
     /// <summary> Event used to notify all observers that the machine is being removed. </summary>
@@ -101,6 +108,12 @@ internal class Machine : IMachine, IDisposable
     /// (for inspection windows), or <c>null</c> for stateless logics.
     /// </summary>
     public string? LogicState => _logic.DisplayState;
+
+    /// <summary>
+    /// The share (0..1) of the demanded electric power this machine received last tick.
+    /// Set exclusively by the <see cref="World.ElectricGrid"/>.
+    /// </summary>
+    public float PowerSatisfaction { get; internal set; }
 
     /// <summary> Executes one quant of its internal logic, acting through the building API. </summary>
     public void Tick() => _logic.Tick(_api);

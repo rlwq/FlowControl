@@ -26,13 +26,14 @@ public partial class Registry
         /// <summary> Registers a new machine type in the registry. </summary>
         public RegistryBuilder RegisterMachine(
             string kind, Vec2I dimensions, InventoryDimensions? invDims = null,
-            bool playerBuildable = true, bool indestructible = false)
+            bool playerBuildable = true, bool indestructible = false,
+            float powerDemand = 0f, PoleSpec? pole = null)
         {
             if (Registry._machineLites.ContainsKey(kind))
                 throw new ArgumentException($"Machine '{kind}' is already registered.", nameof(kind));
 
-            Registry._machineLites.Add(
-                kind, new MachineLite(kind, dimensions, invDims, playerBuildable, indestructible));
+            Registry._machineLites.Add(kind, new MachineLite(
+                kind, dimensions, invDims, playerBuildable, indestructible, powerDemand, pole));
             return this;
         }
 

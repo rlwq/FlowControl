@@ -49,10 +49,20 @@ public sealed class LogicCatalog
             ? value.GetSingle()
             : defaultValue;
 
+    /// <summary> Reads a string parameter from a <c>logicParams</c> object, with a default. </summary>
+    public static string GetString(JsonElement? logicParams, string name, string defaultValue) =>
+        logicParams is { } element && element.TryGetProperty(name, out var value)
+            ? value.GetString() ?? defaultValue
+            : defaultValue;
+
     /// <summary> The catalog of all built-in logics. </summary>
     public static LogicCatalog Standard() => new LogicCatalog()
         .AddMachineLogic("dumb", _ => new Dumb())
         .AddMachineLogic("oven", _ => new Oven())
         .AddMachineLogic("manipulator", _ => new Manipulator())
+        .AddMachineLogic("burner_generator", p => new BurnerGenerator(
+            GetFloat(p, "power", 10f),
+            (int)GetFloat(p, "burnTicks", 200),
+            GetString(p, "fuel", "coal")))
         .AddEntityLogic("wanderer", p => new Wanderer(GetFloat(p, "speed", 0.05f)));
 }

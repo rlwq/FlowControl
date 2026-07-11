@@ -1,6 +1,23 @@
 {
-  "dimensions": [1, 1],
-  "inventory": [0, 1, 0],
+  "dimensions": [
+	1,
+	1
+  ],
+  "inventory": [
+	0,
+	1,
+	0
+  ],
   "logic": "manipulator",
-  "observerOffsets": [[-1, 0], [0, 1]]
+  "observerOffsets": [
+	[
+	  -1,
+	  0
+	],
+	[
+	  0,
+	  1
+	]
+  ],
+  "powerDemand": 1
 }

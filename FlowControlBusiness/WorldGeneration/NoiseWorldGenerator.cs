@@ -6,10 +6,10 @@ namespace FlowControlBusiness.WorldGeneration;
 
 /// <summary>
 /// Deterministic value-noise ground generator: lakes and smooth stone patches on grass,
-/// with rare iron deposit veins — each from its own independent noise channel.
+/// with rare ore veins (iron, copper, coal) — each from its own independent noise channel.
 /// The same seed and coordinate always produce the same ground kind.
-/// Requires the <c>"water"</c>, <c>"stone"</c>, <c>"grass"</c> and <c>"iron_deposit"</c>
-/// grounds to be registered.
+/// Requires the <c>"water"</c>, <c>"stone"</c>, <c>"grass"</c>, <c>"iron_deposit"</c>,
+/// <c>"copper_deposit"</c> and <c>"coal_deposit"</c> grounds to be registered.
 /// </summary>
 public class NoiseWorldGenerator(Registry registry, int seed = 0) : IWorldGenerator
 {
@@ -19,14 +19,8 @@ public class NoiseWorldGenerator(Registry registry, int seed = 0) : IWorldGenera
     /// <summary> Noise values above this threshold become stone. </summary>
     private const float StoneThreshold = 0.62f;
 
-    /// <summary> Frequency of the deposit noise channel: smaller veins than the stone patches. </summary>
+    /// <summary> Frequency of the deposit noise channels: smaller veins than the stone patches. </summary>
     private const float DepositFrequency = 0.17f;
-
-    /// <summary> Deposit noise values above this threshold become iron deposits. </summary>
-    private const float DepositThreshold = 0.85f;
-
-    /// <summary> Seed salt separating the deposit channel from the stone channel. </summary>
-    private const int DepositChannel = 0x5EED;
 
     /// <summary> Frequency of the water channel: low, so lakes come out large. </summary>
     private const float WaterFrequency = 0.06f;
@@ -40,7 +34,17 @@ public class NoiseWorldGenerator(Registry registry, int seed = 0) : IWorldGenera
     private readonly GroundLite _water = registry.GetGroundLite("water");
     private readonly GroundLite _stone = registry.GetGroundLite("stone");
     private readonly GroundLite _grass = registry.GetGroundLite("grass");
-    private readonly GroundLite _ironDeposit = registry.GetGroundLite("iron_deposit");
+
+    /// <summary>
+    /// The ore veins, each on its own independent noise channel (salt) with its own
+    /// rarity threshold. Checked in order; the first match wins.
+    /// </summary>
+    private readonly (GroundLite Lite, int Salt, float Threshold)[] _deposits =
+    [
+        (registry.GetGroundLite("iron_deposit"), 0x5EED, 0.85f),
+        (registry.GetGroundLite("copper_deposit"), 0xC077E4, 0.86f),
+        (registry.GetGroundLite("coal_deposit"), 0xC0A1, 0.855f),
+    ];
 
     /// <summary> Returns the ground kind at the specified global cell. </summary>
     public GroundLite GetGroundAt(Vec2I coord)
@@ -49,9 +53,10 @@ public class NoiseWorldGenerator(Registry registry, int seed = 0) : IWorldGenera
             < WaterThreshold)
             return _water;
 
-        if (ValueNoise(coord.X * DepositFrequency, coord.Y * DepositFrequency, seed ^ DepositChannel)
-            > DepositThreshold)
-            return _ironDeposit;
+        foreach (var (lite, salt, threshold) in _deposits)
+            if (ValueNoise(coord.X * DepositFrequency, coord.Y * DepositFrequency, seed ^ salt)
+                > threshold)
+                return lite;
 
         return ValueNoise(coord.X * Frequency, coord.Y * Frequency, seed) > StoneThreshold
             ? _stone

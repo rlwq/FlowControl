@@ -12,7 +12,7 @@ namespace FlowControlGodotClient.Gui;
 /// </summary>
 /// <remarks>
 /// The hand itself lives in the model (<c>IEntity.HandStack</c>); the HUD only displays it
-/// and translates slot clicks into <see cref="ExchangeSlotWithHand"/> commands, so items
+/// and translates slot clicks into <see cref="CmdExchangeSlotWithHand"/> commands, so items
 /// move between inventories transactionally.
 /// </remarks>
 [GlobalClass]
@@ -69,7 +69,7 @@ public partial class Hud : CanvasLayer
     }
 
     /// <summary> Sends the hand stack back into the player's inventory. </summary>
-    public void ReturnHand() => _world.ReceiveCommand(new ReturnHand(_playerId));
+    public void ReturnHand() => _world.ReceiveCommand(new CmdReturnHand(_playerId));
 
     /// <summary> Toggles the player inventory panel. </summary>
     public void ToggleInventory() => _inventoryPanel.Visible = !_inventoryPanel.Visible;
@@ -137,7 +137,7 @@ public partial class Hud : CanvasLayer
         _inventoryGrid = new InventoryGrid();
         _inventoryGrid.Setup(_resourceRegistry, () => PlayerInventory().BlobSlots);
         _inventoryGrid.SlotClicked += (index, _) =>
-            _world.ReceiveCommand(new ExchangeSlotWithHand(_playerId, InventorySection.Blob, index));
+            _world.ReceiveCommand(new CmdExchangeSlotWithHand(_playerId, InventorySection.Blob, index));
         layout.AddChild(_inventoryGrid);
 
         _inventoryPanel.Visible = false;
@@ -152,7 +152,7 @@ public partial class Hud : CanvasLayer
             GrowHorizontal = Control.GrowDirection.Begin,
         };
         _machineWindow.Setup(_resourceRegistry, (machineId, section, slotIndex) =>
-            _world.ReceiveCommand(new ExchangeSlotWithHand(_playerId, section, slotIndex, machineId)));
+            _world.ReceiveCommand(new CmdExchangeSlotWithHand(_playerId, section, slotIndex, machineId)));
         AddChild(_machineWindow);
     }
 

@@ -42,7 +42,7 @@ public class RotationTests
     public void RotatedMachine_OccupiesRotatedFootprint()
     {
         var sim = TestWorld.BuildSim();
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(8, 8), Rotation.East));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(8, 8), Rotation.East));
         sim.Tick();
 
         Assert.False(sim.ChunkManager.IsCellEmpty(new Vec2I(8, 8)));
@@ -59,10 +59,10 @@ public class RotationTests
     {
         var sim = TestWorld.BuildSim();
         // Manipulator rotated East: input (-1,0) becomes (0,-1) [above], output (0,1) becomes (-1,0) [left]
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(3, 2)));       // covers (3,2),(4,2) — above
-        sim.ReceiveCommand(new PlaceMachineAt("manipulator", new Vec2I(4, 3), Rotation.East));
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(2, 3)));       // covers (2,3),(3,3) — left
-        sim.ReceiveCommand(new InsertItemAt("iron_bar", 8, new Vec2I(3, 2)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(3, 2)));       // covers (3,2),(4,2) — above
+        sim.ReceiveCommand(new CmdPlaceMachineAt("manipulator", new Vec2I(4, 3), Rotation.East));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(2, 3)));       // covers (2,3),(3,3) — left
+        sim.ReceiveCommand(new CmdInsertItemAt("iron_ingot", 8, new Vec2I(3, 2)));
 
         for (var i = 0; i < 200; i++) sim.Tick();
 

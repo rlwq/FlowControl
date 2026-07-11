@@ -83,7 +83,7 @@ public partial class GameScene : Node
 
         SetupDemoScene();
 
-        var addPlayer = new PlaceEntityAt("player", new Vec2(7.5f, 7.5f));
+        var addPlayer = new CmdPlaceEntityAt("player", new Vec2(7.5f, 7.5f));
         _world.ReceiveCommand(addPlayer);
         _world.Tick();
         var playerId = addPlayer.EntityId!.Value;
@@ -101,7 +101,7 @@ public partial class GameScene : Node
         {
             _world.Tick(); // deliver the starting kit before taking an item in hand
             // Take the chest stack (inventory slot 0) into the hand through the command queue
-            _world.ReceiveCommand(new ExchangeSlotWithHand(
+            _world.ReceiveCommand(new CmdExchangeSlotWithHand(
                 playerId, FlowControlModel.Inventories.InventorySection.Blob, 0));
             _world.Tick();
             Input.WarpMouse(GetViewport().GetVisibleRect().Size / 2 + new Vector2(120, 60));
@@ -120,27 +120,32 @@ public partial class GameScene : Node
     {
         // The manipulator's input observer (-1, 0) points at the first chest
         // and its output observer (0, 1) points at the second one.
-        _world.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(2, 3)));
-        _world.ReceiveCommand(new PlaceMachineAt("manipulator", new Vec2I(4, 3)));
-        _world.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(4, 4)));
+        _world.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(2, 3)));
+        _world.ReceiveCommand(new CmdPlaceMachineAt("manipulator", new Vec2I(4, 3)));
+        _world.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(4, 4)));
 
-        _world.ReceiveCommand(new PlaceMachineAt("oven", new Vec2I(8, 2)));
-        _world.ReceiveCommand(new PlaceMachineAt("door", new Vec2I(7, 5)));
+        _world.ReceiveCommand(new CmdPlaceMachineAt("oven", new Vec2I(8, 2)));
+        _world.ReceiveCommand(new CmdPlaceMachineAt("door", new Vec2I(7, 5)));
 
-        _world.ReceiveCommand(new PlaceEntityAt("cow", new Vec2(11.5f, 6.5f)));
-        _world.ReceiveCommand(new PlaceEntityAt("cow", new Vec2(13.2f, 4.3f)));
-        _world.ReceiveCommand(new PlaceEntityAt("cow", new Vec2(11.3f, 2.8f)));
+        // Power for the manipulator: a coal-fired generator feeding one pole
+        _world.ReceiveCommand(new CmdPlaceMachineAt("burner_generator", new Vec2I(6, 1)));
+        _world.ReceiveCommand(new CmdPlaceMachineAt("power_pole", new Vec2I(5, 2)));
+        _world.ReceiveCommand(new CmdInsertItemAt("coal", 20, new Vec2I(6, 1)));
+
+        _world.ReceiveCommand(new CmdPlaceEntityAt("cow", new Vec2(11.5f, 6.5f)));
+        _world.ReceiveCommand(new CmdPlaceEntityAt("cow", new Vec2(13.2f, 4.3f)));
+        _world.ReceiveCommand(new CmdPlaceEntityAt("cow", new Vec2(11.3f, 2.8f)));
 
         // A stone path along the workshop
         for (var x = 2; x <= 9; x++)
-            _world.ReceiveCommand(new SetGroundAt("stone", new Vec2I(x, 5)));
+            _world.ReceiveCommand(new CmdSetGroundAt("stone", new Vec2I(x, 5)));
 
         // Stock the first chest so the manipulator has something to move
-        _world.ReceiveCommand(new InsertItemAt("iron_bar", 8, new Vec2I(2, 3)));
+        _world.ReceiveCommand(new CmdInsertItemAt("iron_ingot", 8, new Vec2I(2, 3)));
 
         // A few items lying on the ground to pick up
-        _world.ReceiveCommand(new DropItemAt("iron_bar", 3, new Vec2(5.4f, 6.6f)));
-        _world.ReceiveCommand(new DropItemAt("iron_ore", 2, new Vec2(9.6f, 6.4f)));
+        _world.ReceiveCommand(new CmdDropItemAt("iron_ingot", 3, new Vec2(5.4f, 6.6f)));
+        _world.ReceiveCommand(new CmdDropItemAt("iron_ore", 2, new Vec2(9.6f, 6.4f)));
     }
 
     /// <summary>
@@ -162,9 +167,12 @@ public partial class GameScene : Node
     /// <summary> Gives the freshly spawned player their starting kit. </summary>
     private void StockPlayer(uint playerId)
     {
-        _world.ReceiveCommand(new GiveItemsTo(playerId, "chest", 4));
-        _world.ReceiveCommand(new GiveItemsTo(playerId, "manipulator", 4));
-        _world.ReceiveCommand(new GiveItemsTo(playerId, "oven", 1));
+        _world.ReceiveCommand(new CmdGiveItemsTo(playerId, "chest", 4));
+        _world.ReceiveCommand(new CmdGiveItemsTo(playerId, "manipulator", 4));
+        _world.ReceiveCommand(new CmdGiveItemsTo(playerId, "oven", 1));
+        _world.ReceiveCommand(new CmdGiveItemsTo(playerId, "power_pole", 6));
+        _world.ReceiveCommand(new CmdGiveItemsTo(playerId, "burner_generator", 1));
+        _world.ReceiveCommand(new CmdGiveItemsTo(playerId, "coal", 20));
     }
 
     public override void _Process(double delta)

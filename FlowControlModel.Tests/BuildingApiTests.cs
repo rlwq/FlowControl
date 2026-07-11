@@ -21,16 +21,8 @@ public class BuildingApiTests
 
     /// <summary> The standard test registry plus a 1x1 probe machine with two ports. </summary>
     private static Registry ProbeRegistry() =>
-        new Registry.RegistryBuilder()
-            .RegisterGround("stone")
-            .RegisterGround("grass")
-            .RegisterGround("water", passable: false)
-            .RegisterGround("iron_deposit", spawnsItemKind: "iron_ore", spawnPeriodTicks: 50)
-            .RegisterItem("iron_bar", 16)
-            .RegisterItem("iron_ore", 32)
-            .RegisterMachine("chest", new Vec2I(2, 1), new InventoryDimensions(0, 8, 0))
+        TestWorld.StandardBuilder()
             .RegisterMachine("probe", new Vec2I(1, 1), new InventoryDimensions(0, 2, 0))
-            .RegisterMachineLogic("chest", new FlowControlBusiness.Machines.Dumb())
             .RegisterMachineLogic("probe", new ApiProbe(), [new Vec2I(-1, 0), new Vec2I(0, 1)])
             .Build();
 
@@ -42,10 +34,10 @@ public class BuildingApiTests
     {
         _lastApi = null;
         var sim = TestWorld.BuildSim(ProbeRegistry());
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(2, 3)));
-        sim.ReceiveCommand(new PlaceMachineAt("probe", new Vec2I(4, 3)));
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(4, 4)));
-        sim.ReceiveCommand(new InsertItemAt("iron_bar", 8, new Vec2I(2, 3)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(2, 3)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("probe", new Vec2I(4, 3)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(4, 4)));
+        sim.ReceiveCommand(new CmdInsertItemAt("iron_ingot", 8, new Vec2I(2, 3)));
         sim.Tick();
 
         Assert.NotNull(_lastApi);
@@ -71,7 +63,7 @@ public class BuildingApiTests
         var (_, api) = Setup();
 
         Assert.Equal(1, api.Port(0).Pull(1));
-        Assert.Equal(1, api.CountItems("iron_bar"));
+        Assert.Equal(1, api.CountItems("iron_ingot"));
 
         // The chest has 7 bars left: pulling 99 moves only what exists
         Assert.Equal(7, api.Port(0).Pull(99));
@@ -87,7 +79,7 @@ public class BuildingApiTests
 
         Assert.Equal(8, api.Port(1).Push(8));
         Assert.Equal(0, api.CountItems());
-        Assert.Equal(8, api.Port(1).Machine!.Inventory.CountItems("iron_bar"));
+        Assert.Equal(8, api.Port(1).Machine!.Inventory.CountItems("iron_ingot"));
         Assert.Equal(0, api.Port(1).Push(1)); // own inventory is empty: nothing moves
     }
 
@@ -95,7 +87,7 @@ public class BuildingApiTests
     public void GroundInteraction_FlowsThroughOwnInventory()
     {
         var (sim, api) = Setup();
-        sim.ReceiveCommand(new DropItemAt("iron_ore", 3, new Vec2(5.5f, 3.5f)));
+        sim.ReceiveCommand(new CmdDropItemAt("iron_ore", 3, new Vec2(5.5f, 3.5f)));
         sim.Tick();
 
         Assert.Single(api.GroundItemsNear(2f));

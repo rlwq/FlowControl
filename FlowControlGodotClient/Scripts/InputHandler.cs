@@ -10,7 +10,7 @@ namespace FlowControlGodotClient;
 /// are rebindable and gamepad-friendly: movement (<c>move_*</c>), building rotation
 /// (<c>rotate_building</c>), item pick-up (<c>pick_up</c>).
 /// Placement works Factorio-style: a building item is taken from the inventory into the
-/// hand (<see cref="Hud.HandKind"/>), previewed by the <see cref="PlacementGhost"/> and
+/// hand (<see cref="Gui.Hud.HandStack"/>), previewed by the <see cref="Gui.PlacementGhost"/> and
 /// placed with the left mouse button; clicking a machine with an empty hand inspects it.
 /// Also drives the camera: follow-the-player or free-cam (<c>free_camera</c>),
 /// smooth zoom towards the mouse cursor (wheel).
@@ -75,7 +75,7 @@ public partial class InputHandler : Node
 
         var direction = Input.GetVector("move_left", "move_right", "move_up", "move_down");
         if (direction != Vector2.Zero)
-            _world.ReceiveCommand(new EntityStepById(_playerId, (direction * PlayerSpeed).ToModel()));
+            _world.ReceiveCommand(new CmdEntityStepById(_playerId, (direction * PlayerSpeed).ToModel()));
     }
 
     public override void _Process(double delta)
@@ -126,7 +126,7 @@ public partial class InputHandler : Node
         if (@event.IsActionPressed("rotate_building"))
             PlaceRotation = PlaceRotation.RotatedCw();
         if (@event.IsActionPressed("pick_up"))
-            _world.ReceiveCommand(new PickUpItemAt(PlayerCoord(), _playerId));
+            _world.ReceiveCommand(new CmdPickUpItemAt(PlayerCoord(), _playerId));
         if (@event.IsActionPressed("free_camera"))
             _freeCamera = !_freeCamera;
 
@@ -143,7 +143,7 @@ public partial class InputHandler : Node
                 break;
             case MouseButton.Left when _hud.HandBuildingKind is { } buildingKind:
                 _world.ReceiveCommand(
-                    new PlaceMachineAt(buildingKind, MouseTileCoord(), PlaceRotation, _playerId));
+                    new CmdPlaceMachineAt(buildingKind, MouseTileCoord(), PlaceRotation, _playerId));
                 break;
             case MouseButton.Left:
                 InspectMachineUnderCursor();
@@ -155,7 +155,7 @@ public partial class InputHandler : Node
                 InspectMachineUnderCursor();
                 break;
             case MouseButton.Middle:
-                _world.ReceiveCommand(new RemoveMachineAt(MouseTileCoord(), _playerId));
+                _world.ReceiveCommand(new CmdRemoveMachineAt(MouseTileCoord(), _playerId));
                 break;
         }
     }

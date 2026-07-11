@@ -44,6 +44,25 @@ public interface IBuildingApi
     int CountItems(string? itemKind = null);
 
     /// <summary>
+    /// Consumes up to <paramref name="count"/> items of a kind from the building's own
+    /// inventory (unlike external extraction, the input section is reachable — that is
+    /// where ingredients and fuel arrive). Returns the number actually consumed.
+    /// </summary>
+    int ConsumeItems(string itemKind, int count);
+
+    /// <summary>
+    /// The share (0..1) of the demanded electric power received last tick.
+    /// Always 1 for machine kinds without a power demand; logics scale their work by it.
+    /// </summary>
+    float Power { get; }
+
+    /// <summary>
+    /// Offers power into the building's electric network for the current tick (generators).
+    /// The building must stand within a pole's supply radius, or the power is wasted.
+    /// </summary>
+    void OfferPower(float amount);
+
+    /// <summary>
     /// Picks up ground items lying within <paramref name="radius"/> cells of the building
     /// (clamped to <see cref="MaxRange"/>) into its own inventory: of one kind, or any.
     /// Returns the number of items collected; whatever does not fit stays on the ground.
@@ -102,6 +121,7 @@ internal sealed class BuildingApi : IBuildingApi, IDisposable
     private readonly Registry _registry;
     private readonly ChunkManager _chunkManager;
     private readonly GameObjectFactory _factory;
+    private readonly ElectricGrid _electricGrid;
     private readonly BuildingPort[] _ports;
 
     private Machine _machine = null!;
@@ -114,11 +134,12 @@ internal sealed class BuildingApi : IBuildingApi, IDisposable
 
     public BuildingApi(
         Registry registry, ChunkManager chunkManager, GameObjectFactory factory,
-        CellObserver[] observers)
+        ElectricGrid electricGrid, CellObserver[] observers)
     {
         _registry = registry;
         _chunkManager = chunkManager;
         _factory = factory;
+        _electricGrid = electricGrid;
         _ports = Array.ConvertAll(observers, observer => new BuildingPort(this, observer));
     }
 
@@ -134,6 +155,17 @@ internal sealed class BuildingApi : IBuildingApi, IDisposable
 
     /// <inheritdoc/>
     public int CountItems(string? itemKind = null) => _machine.Inventory.CountItems(itemKind);
+
+    /// <inheritdoc/>
+    public int ConsumeItems(string itemKind, int count) =>
+        _machine.Inventory.ExtractAsOwner(
+            new ItemStack(count, _registry.GetItemLite(itemKind))).Count;
+
+    /// <inheritdoc/>
+    public float Power => _machine.PowerSatisfaction;
+
+    /// <inheritdoc/>
+    public void OfferPower(float amount) => _electricGrid.OfferPower(_machine, amount);
 
     /// <inheritdoc/>
     public int PickUpItems(float radius, string? itemKind = null)

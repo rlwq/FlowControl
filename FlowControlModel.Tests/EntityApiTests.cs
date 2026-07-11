@@ -28,15 +28,7 @@ public class EntityApiTests
     }
 
     private static Registry ProbeRegistry(EntityLogic probeLogic) =>
-        new Registry.RegistryBuilder()
-            .RegisterGround("stone")
-            .RegisterGround("grass")
-            .RegisterGround("water", passable: false)
-            .RegisterGround("iron_deposit", spawnsItemKind: "iron_ore", spawnPeriodTicks: 50)
-            .RegisterItem("iron_bar", 16)
-            .RegisterItem("iron_ore", 32)
-            .RegisterMachine("chest", new Vec2I(2, 1), new InventoryDimensions(0, 8, 0))
-            .RegisterMachineLogic("chest", new FlowControlBusiness.Machines.Dumb())
+        TestWorld.StandardBuilder()
             .RegisterEntity("probe", new Vec2(0.75f, 0.75f), new InventoryDimensions(0, 4, 0))
             .RegisterEntityLogic("probe", probeLogic)
             .Build();
@@ -46,9 +38,9 @@ public class EntityApiTests
     {
         _lastApi = null;
         var sim = TestWorld.BuildSim(ProbeRegistry(new ApiProbe()));
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(8, 6)));
-        sim.ReceiveCommand(new InsertItemAt("iron_bar", 8, new Vec2I(8, 6)));
-        sim.ReceiveCommand(new PlaceEntityAt("probe", new Vec2(7.5f, 7.5f)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(8, 6)));
+        sim.ReceiveCommand(new CmdInsertItemAt("iron_ingot", 8, new Vec2I(8, 6)));
+        sim.ReceiveCommand(new CmdPlaceEntityAt("probe", new Vec2(7.5f, 7.5f)));
         sim.Tick();
 
         Assert.NotNull(_lastApi);
@@ -60,8 +52,8 @@ public class EntityApiTests
     public void Move_IsAppliedThroughCollisions()
     {
         var sim = TestWorld.BuildSim(ProbeRegistry(new Walker(new Vec2(0.25f, 0))));
-        sim.ReceiveCommand(new PlaceEntityAt("probe", new Vec2(5.5f, 7.5f)));
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(8, 7)));
+        sim.ReceiveCommand(new CmdPlaceEntityAt("probe", new Vec2(5.5f, 7.5f)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(8, 7)));
         sim.Tick();
 
         for (var i = 0; i < 100; i++) sim.Tick();
@@ -81,20 +73,20 @@ public class EntityApiTests
         var machine = Assert.Single(api.MachinesNear(3f));
         Assert.Equal("chest", machine.Lite.Kind);
 
-        Assert.Equal(3, api.PullFrom(machine.Id, 3, "iron_bar"));
-        Assert.Equal(3, api.CountItems("iron_bar"));
+        Assert.Equal(3, api.PullFrom(machine.Id, 3, "iron_ingot"));
+        Assert.Equal(3, api.CountItems("iron_ingot"));
 
         Assert.Equal(2, api.PushTo(machine.Id, 2));
         Assert.Equal(1, api.CountItems());
-        Assert.Equal(7, machine.Inventory.CountItems("iron_bar"));
+        Assert.Equal(7, machine.Inventory.CountItems("iron_ingot"));
     }
 
     [Fact]
     public void PullFrom_OutOfRangeMachine_MovesNothing()
     {
         var (sim, api) = Setup();
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(20, 20)));
-        sim.ReceiveCommand(new InsertItemAt("iron_bar", 5, new Vec2I(20, 20)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(20, 20)));
+        sim.ReceiveCommand(new CmdInsertItemAt("iron_ingot", 5, new Vec2I(20, 20)));
         sim.Tick();
 
         var farChest = sim.ChunkManager.GetMachineAt(new Vec2I(20, 20))!;
@@ -106,7 +98,7 @@ public class EntityApiTests
     public void GroundInteraction_FlowsThroughOwnInventory()
     {
         var (sim, api) = Setup();
-        sim.ReceiveCommand(new DropItemAt("iron_ore", 4, new Vec2(8.5f, 7.5f)));
+        sim.ReceiveCommand(new CmdDropItemAt("iron_ore", 4, new Vec2(8.5f, 7.5f)));
         sim.Tick();
 
         Assert.Single(api.GroundItemsNear(2f));

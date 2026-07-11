@@ -73,7 +73,12 @@ public sealed class ContentLoader(LogicCatalog catalog)
                 ToVec2I(machine.Dimensions, kind, "dimensions"),
                 ToInventoryDims(machine.Inventory, kind),
                 machine.PlayerBuildable,
-                machine.Indestructible);
+                machine.Indestructible,
+                machine.PowerDemand,
+                machine.Pole == null
+                    ? null
+                    : new FlowControlModel.Machines.PoleSpec(
+                        machine.Pole.WireReach, machine.Pole.SupplyRadius));
 
             if (machine.Logic == null)
             {

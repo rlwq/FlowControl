@@ -9,7 +9,7 @@ public class EntityLogicTests
     public void Cow_WandersAroundOnItsOwn()
     {
         var sim = TestWorld.BuildSim();
-        var place = new PlaceEntityAt("cow", new Vec2(50.5f, 50.5f));
+        var place = new CmdPlaceEntityAt("cow", new Vec2(50.5f, 50.5f));
         sim.ReceiveCommand(place);
         sim.Tick();
         var cowId = place.EntityId!.Value;
@@ -41,7 +41,7 @@ public class EntityLogicTests
     public void RemoveEntityById_RemovesTheEntityAndRaisesEvent()
     {
         var sim = TestWorld.BuildSim();
-        var place = new PlaceEntityAt("cow", new Vec2(5.5f, 5.5f));
+        var place = new CmdPlaceEntityAt("cow", new Vec2(5.5f, 5.5f));
         sim.ReceiveCommand(place);
         sim.Tick();
         var cowId = place.EntityId!.Value;
@@ -49,7 +49,7 @@ public class EntityLogicTests
         var removed = 0;
         sim.ChunkManager.EntityRemoved += _ => removed++;
 
-        sim.ReceiveCommand(new RemoveEntityById(cowId));
+        sim.ReceiveCommand(new CmdRemoveEntityById(cowId));
         sim.Tick();
 
         Assert.Equal(1, removed);

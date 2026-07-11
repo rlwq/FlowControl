@@ -23,39 +23,47 @@ public class Manipulator : MachineLogic
     private const int OutputPort = 1;
 
     private State _state = State.Fetching;
-    private int _motionTicks = HalfRotationTime;
+    private float _progress = HalfRotationTime;
 
     /// <inheritdoc/>
     public override string? DisplayState =>
-        _motionTicks < HalfRotationTime
-            ? $"{_state} ({_motionTicks}/{HalfRotationTime})"
+        _progress < HalfRotationTime
+            ? $"{_state} ({(int)_progress}/{HalfRotationTime})"
             : $"{_state} (waiting)";
 
-    /// <summary> Executes one quant of the logic: swings the arm or moves one item. </summary>
+    /// <summary>
+    /// Executes one quant of the logic: swings the arm or moves one item.
+    /// The swing speed scales with the received electric power (kinds registered
+    /// without a power demand always run at full speed).
+    /// </summary>
     public override void Tick(IBuildingApi building)
     {
+        var power = building.Power;
+        if (power <= 0)
+            return; // starved: the arm freezes
+
         // The arm is still swinging towards its target cell
-        if (_motionTicks < HalfRotationTime) {
-            _motionTicks++;
+        if (_progress < HalfRotationTime) {
+            _progress += power;
             return;
         }
 
         if (_state == State.Fetching) {
             if (building.Port(InputPort).Pull(1) == 0) return; // nothing to grab yet
             _state = State.Delivering;
-            _motionTicks = 0;
+            _progress = 0;
             return;
         }
 
         // Delivering: the arm has arrived at the output cell with an item in hand
         if (building.Port(OutputPort).Push(1) == 1) {
             _state = State.Fetching;
-            _motionTicks = 0;
+            _progress = 0;
             return;
         }
         if (building.CountItems() == 0) { // the hand was emptied externally: swing back
             _state = State.Fetching;
-            _motionTicks = 0;
+            _progress = 0;
         }
         // Otherwise the target is missing or full: keep holding the item
     }

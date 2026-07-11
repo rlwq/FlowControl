@@ -80,6 +80,22 @@ public static class ContentEntries
 
         /// <summary> Whether the machine resists removal by players (e.g. the Hub). </summary>
         public bool Indestructible { get; set; }
+
+        /// <summary> Power units drawn from the electric network every tick (0 = no electricity needed). </summary>
+        public float PowerDemand { get; set; }
+
+        /// <summary> Electric pole parameters; present only on pole machines. </summary>
+        public PoleEntry? Pole { get; set; }
+    }
+
+    /// <summary> Electric pole parameters inside a machine entry. </summary>
+    public sealed class PoleEntry
+    {
+        /// <summary> Poles whose centers are within this distance connect into one network. </summary>
+        public float WireReach { get; set; } = 6f;
+
+        /// <summary> Machines within this distance of the pole's center are powered. </summary>
+        public float SupplyRadius { get; set; } = 3.5f;
     }
 
     /// <summary>

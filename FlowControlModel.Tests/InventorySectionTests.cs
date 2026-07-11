@@ -22,7 +22,7 @@ public class InventorySectionTests
     public void SectionViews_ReflectInsertedItems()
     {
         var inventory = new Inventory(new InventoryDimensions(1, 2, 0));
-        var iron = new ItemLite("iron_bar", 16);
+        var iron = new ItemLite("iron_ingot", 16);
         inventory.InsertItem(new ItemStack(20, iron));
 
         // 16 fill the input slot, 4 spill into the blob section
@@ -34,8 +34,8 @@ public class InventorySectionTests
     public void MachineLogicState_IsExposedThroughIMachine()
     {
         var sim = TestWorld.BuildSim();
-        sim.ReceiveCommand(new PlaceMachineAt("manipulator", new Vec2I(4, 3)));
-        sim.ReceiveCommand(new PlaceMachineAt("chest", new Vec2I(6, 3)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("manipulator", new Vec2I(4, 3)));
+        sim.ReceiveCommand(new CmdPlaceMachineAt("chest", new Vec2I(6, 3)));
         sim.Tick();
 
         var manipulator = sim.ChunkManager.GetMachineAt(new Vec2I(4, 3))!;

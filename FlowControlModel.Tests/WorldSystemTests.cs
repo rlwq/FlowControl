@@ -19,7 +19,7 @@ public class WorldSystemTests
             RandomRolls.Add(world.Random.Next(100));
 
             if (world.TickCount % 5 == 0)
-                world.Enqueue(new DropItemAt("iron_bar", 1, new Vec2(5.5f, 5.5f)));
+                world.Enqueue(new CmdDropItemAt("iron_ingot", 1, new Vec2(5.5f, 5.5f)));
         }
     }
 

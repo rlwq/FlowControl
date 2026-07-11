@@ -1,0 +1,5 @@
+{
+  "dimensions": [1, 1],
+  "logic": "dumb",
+  "pole": { "wireReach": 6, "supplyRadius": 3.5 }
+}
