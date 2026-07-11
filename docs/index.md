@@ -21,4 +21,5 @@ Key invariants:
   `IMachine`, `IEntity`, `IChunkManager`.
 - Chunks are permanent and always simulated; only client-side chunk *views* load and unload.
 
-Browse the [API reference](api/FlowControlModel.yml) for the full picture.
+Start with the [core architecture overview](articles/core-architecture.md) (diagrams
+included), then browse the [API reference](api/FlowControlModel.yml) for the full picture.
